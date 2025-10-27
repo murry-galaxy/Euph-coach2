@@ -287,4 +287,3 @@ const btnPurple  = { ...btn, background:"#7c3aed", color:"white", border:"none" 
 const circleBtn  = { height:64, width:64, borderRadius:"9999px", fontSize:20, fontWeight:700, border:"2px solid #e5e7eb" };
 const th = { padding:8, textAlign:"left", fontWeight:600, fontSize:12, color:"#374151" };
 const td = { padding:8 };
-Replace with working Euphonium Coach app code (Bb treble fix + pitch detection)
