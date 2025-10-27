@@ -1,13 +1,21 @@
 {
-    "name": "Euph Coach — Treble Bb (3-valve)",
-    "short_name": "Euph Coach",
-    "start_url": ".",
-    "display": "standalone",
-    "background_color": "#111827",
-    "theme_color": "#111827",
-    "icons": [
-      { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-      { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
-    ]
-  }
-  
+  "name": "Euph Coach — Treble Bb (3-valve)",
+  "short_name": "Euph Coach",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "description": "Learn euphonium fingering and pitch accuracy with interactive feedback.",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
