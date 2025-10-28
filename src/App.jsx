@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import StaffNote from "./StaffNote.jsx";
 
 export default function App() {
   const [mode, setMode] = useState("flashcards");
