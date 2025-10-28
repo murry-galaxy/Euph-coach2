@@ -293,6 +293,26 @@ function Badge({ label, ok }) {
     </span>
   );
 }
+function ResultPopup({ visible, ok, text }) {
+  if (!visible) return null;
+  const bg = ok ? "rgba(34,197,94,0.95)" : "rgba(220,38,38,0.95)"; // green / red
+  const emoji = ok ? "✅" : "❌";
+  return (
+    <div style={{
+      position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+      background: "rgba(0,0,0,0.25)", zIndex: 50
+    }}>
+      <div style={{
+        padding: "20px 28px", borderRadius: 14, color: "white", background: bg,
+        boxShadow: "0 10px 30px rgba(0,0,0,0.25)", fontSize: 24, fontWeight: 700,
+        display: "flex", gap: 12, alignItems: "center", minWidth: 260, justifyContent: "center"
+      }}>
+        <span style={{ fontSize: 28 }}>{emoji}</span>
+        <span>{text}</span>
+      </div>
+    </div>
+  );
+}
 
 /* ------- styles ------- */
 const btn = { padding:"8px 12px", borderRadius:8, border:"1px solid #ddd", background:"white" };
