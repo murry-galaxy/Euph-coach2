@@ -49,7 +49,7 @@ export default function App() {
 
   /* -------- Notes & valves -------- */
   const [currentNote, setCurrentNote] = useState("C4"); // written (treble-Bb)
-  const [valveInput, setValveInput] = useState(""); // e.g., "13"
+  const [valveInput, setValveInput] = useState(""); // e.g., "13" or "" for open
   const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
   const VALVE_MAP = { C:"0","C#":"12", D:"13","D#":"23", E:"12", F:"1","F#":"123", G:"13","G#":"23", A:"12","A#":"1", B:"2" };
 
@@ -194,6 +194,7 @@ export default function App() {
   const [resultText, setResultText] = useState("");
   const popupTimerRef = useRef(null);
 
+  /* -------- Valve input handlers -------- */
   function pressValve(v){
     let nv = valveInput.includes(v) ? valveInput.replace(v,"") : valveInput + v;
     nv = nv.split("").sort().join("");
@@ -203,10 +204,27 @@ export default function App() {
     setFeedback(nv === expected ? `✅ Valves OK (${nv || "0"})` : `Valves ${nv || "0"} — expected ${expected}`);
   }
 
+  // NEW: explicit Open (0) handler
+  function setOpenValves() {
+    setValveInput("");
+    const targetName = parseWritten(currentNote).name;
+    const expected = VALVE_MAP[targetName];
+    setFeedback(expected === "0" ? "✅ Valves OK (0)" : `Valves 0 — expected ${expected}`);
+  }
+
+  // Optional: keyboard shortcut "0" to set Open
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "0") setOpenValves();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   function submitAttempt(){
     const targetName = parseWritten(currentNote).name;
     const expected = VALVE_MAP[targetName];
-    const valvesGood = (valveInput || "0") === expected;
+    const valvesGood = (valveInput || "0") === expected; // "" means open (0)
     const pitchGood = livePlayed === targetName && Math.abs(liveCents) <= 25;
     const bothGood = valvesGood && pitchGood;
 
@@ -275,20 +293,37 @@ export default function App() {
         <StaffNote note={currentNote} ok={liveOK} />
       </div>
       <div style={{ textAlign: "center", fontSize: 12, color: "#555", marginTop: -6, marginBottom: 12 }}>
-        Target: {currentNote} • Pitch window: ±25¢
+        Target: {currentNote} • Pitch window: ±25¢ • Use 1/2/3 or <b>Open (0)</b>
       </div>
 
       {/* Valve pad */}
-      <div style={{ display:"flex", justifyContent:"center", gap:16, marginBottom:12 }}>
+      <div style={{ display:"flex", justifyContent:"center", gap:16, marginBottom:12, flexWrap:"wrap" }}>
         {["1","2","3"].map(v=>(
           <button
             key={v}
             onClick={()=>pressValve(v)}
-            style={{...circleBtn, background: valveInput.includes(v)?"#2563eb":"white", color: valveInput.includes(v)?"white":"black"}}
+            style={{
+              ...circleBtn,
+              background: valveInput.includes(v) ? "#2563eb" : "white",
+              color: valveInput.includes(v) ? "white" : "black"
+            }}
           >
             {v}
           </button>
         ))}
+        {/* NEW: explicit open option */}
+        <button
+          onClick={setOpenValves}
+          title="Open (no valves)"
+          style={{
+            ...circleBtn,
+            width: 88,
+            background: valveInput === "" ? "#0ea5e9" : "white",
+            color: valveInput === "" ? "white" : "black"
+          }}
+        >
+          Open<br/>(0)
+        </button>
       </div>
 
       {/* Live meter */}
@@ -370,4 +405,4 @@ const btn = { padding:"8px 12px", borderRadius:8, border:"1px solid #ddd", backg
 const btnPrimary = { ...btn, background:"#2563eb", color:"white", border:"none" };
 const btnSuccess = { ...btn, background:"#16a34a", color:"white", border:"none" };
 const btnPurple  = { ...btn, background:"#7c3aed", color:"white", border:"none" };
-const circleBtn  = { height:64, width:64, borderRadius:"9999px", fontSize:20, fontWeight:700, border:"2px solid #e5e7eb" };
+const circleBtn  = { height:64, width:64, borderRadius:"9999px", fontSize:20, fontWeight:700, border:"2px solid #e5e7eb", lineHeight:"1.1" };
