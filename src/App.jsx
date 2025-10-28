@@ -1,34 +1,76 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import StaffNote from "./StaffNote.jsx";
 
+/* ---------------- Popup ---------------- */
+function ResultPopup({ visible, ok, text }) {
+  if (!visible) return null;
+  const bg = ok ? "rgba(34,197,94,0.95)" : "rgba(220,38,38,0.95)"; // green / red
+  const emoji = ok ? "✅" : "❌";
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.25)",
+        zIndex: 50,
+      }}
+    >
+      <div
+        style={{
+          padding: "20px 28px",
+          borderRadius: 14,
+          color: "white",
+          background: bg,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+          fontSize: 24,
+          fontWeight: 700,
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          minWidth: 260,
+          justifyContent: "center",
+        }}
+      >
+        <span style={{ fontSize: 28 }}>{emoji}</span>
+        <span>{text}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
-  // -------- Modes --------
+  /* -------- Modes & basic UI -------- */
   const [mode, setMode] = useState("flashcards"); // "flashcards" | "scales"
   const [listening, setListening] = useState(false);
   const [feedback, setFeedback] = useState("Press Start Listening, then play the note.");
 
-  // -------- Notes & valves --------
+  /* -------- Notes & valves -------- */
   const [currentNote, setCurrentNote] = useState("C4"); // written (treble-Bb)
-  const [valveInput, setValveInput] = useState("");     // e.g., "13"
+  const [valveInput, setValveInput] = useState(""); // e.g., "13"
   const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
   const VALVE_MAP = { C:"0","C#":"12", D:"13","D#":"23", E:"12", F:"1","F#":"123", G:"13","G#":"23", A:"12","A#":"1", B:"2" };
 
   const PRACTICE_POOL = useMemo(() => {
     const nameFromMidi = (m)=>NOTE_NAMES[(m%12+12)%12];
     const octaveFromMidi = (m)=>Math.floor(m/12)-1;
-    const arr=[]; for(let m=60;m<=83;m++) arr.push(`${nameFromMidi(m)}${octaveFromMidi(m)}`); // C4..B5
+    const arr = [];
+    for (let m = 60; m <= 83; m++) arr.push(`${nameFromMidi(m)}${octaveFromMidi(m)}`); // C4..B5
     return arr;
   }, []);
 
   function parseWritten(note) {
     const m = note.match(/([A-G](?:#|b)?)(\d)/);
-    if (!m) return { name:"C", octave:4 };
-    let name = m[1]; const FLAT_TO_SHARP = { Ab:"G#", Bb:"A#", Db:"C#", Eb:"D#", Gb:"F#" };
+    if (!m) return { name: "C", octave: 4 };
+    let name = m[1];
+    const FLAT_TO_SHARP = { Ab: "G#", Bb: "A#", Db: "C#", Eb: "D#", Gb: "F#" };
     if (name.includes("b")) name = FLAT_TO_SHARP[name] || name;
     return { name, octave: Number(m[2]) };
   }
 
-  // -------- Scale mode (written major) --------
+  /* -------- Scale mode (written major) -------- */
   const WRITTEN_TONICS = ["C","G","D","F","Bb","A","E","Eb"];
   const [selectedTonic, setSelectedTonic] = useState("C");
   const [scaleIndex, setScaleIndex] = useState(0);
@@ -40,35 +82,37 @@ export default function App() {
   function octaveFromMidi(m){ return Math.floor(m/12)-1; }
 
   function buildWrittenScale(tonic, octave=4){
-    const MAP={ Bb:"A#", Eb:"D#" };
+    const MAP = { Bb: "A#", Eb: "D#" };
     const tonicSharp = MAP[tonic] || tonic;
     const tMidi = midiFromNoteName(tonicSharp, octave);
-    const seq=[tMidi]; let cur=tMidi;
-    for(const s of SCALE_STEPS){ cur+=s; seq.push(cur); }
-    return seq.map(m=>`${nameFromMidi(m)}${octaveFromMidi(m)}`);
+    const seq = [tMidi]; let cur = tMidi;
+    for (const s of SCALE_STEPS) { cur += s; seq.push(cur); }
+    return seq.map(m => `${nameFromMidi(m)}${octaveFromMidi(m)}`);
   }
 
-  const currentScale = useMemo(()=>{
-    const startOct = (selectedTonic==="A"||selectedTonic==="B") ? 3 : 4;
+  const currentScale = useMemo(() => {
+    const startOct = (selectedTonic === "A" || selectedTonic === "B") ? 3 : 4;
     return buildWrittenScale(selectedTonic, startOct);
-  },[selectedTonic]);
+  }, [selectedTonic]);
 
-  function nextFlashcard(){
+  function nextFlashcard() {
     const n = PRACTICE_POOL[Math.floor(Math.random()*PRACTICE_POOL.length)];
-    setCurrentNote(n); setValveInput(""); setFeedback("Play the note and press your valves!");
+    setCurrentNote(n);
+    setValveInput("");
+    setFeedback("Play the note and press your valves!");
   }
-  function nextScaleStep(){
+  function nextScaleStep() {
     const seq = currentScale;
-    let idx = scaleIndex + (scaleAsc?1:-1);
-    if (idx >= seq.length){ setScaleAsc(false); idx = seq.length - 2; }
-    if (idx < 0){ setScaleAsc(true); idx = 0; }
+    let idx = scaleIndex + (scaleAsc ? 1 : -1);
+    if (idx >= seq.length) { setScaleAsc(false); idx = seq.length - 2; }
+    if (idx < 0) { setScaleAsc(true); idx = 0; }
     setScaleIndex(idx);
     setCurrentNote(seq[idx]);
     setValveInput("");
-    setFeedback(`Scale: ${selectedTonic} major — degree ${idx+1}/${seq.length}`);
+    setFeedback(`Scale: ${selectedTonic} major — degree ${idx + 1}/${seq.length}`);
   }
 
-  // -------- Pitch detection --------
+  /* -------- Pitch detection -------- */
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const bufferRef = useRef(null);
@@ -76,63 +120,79 @@ export default function App() {
 
   const [liveCents, setLiveCents] = useState(0);
   const [livePlayed, setLivePlayed] = useState(null);
-  const [liveOK, setLiveOK] = useState(false); // <-- used to color the notehead
+  const [liveOK, setLiveOK] = useState(false); // drives StaffNote colour
 
   function freqToMidiAndCents(freq){
-    const A4=440; const midi=Math.round(12*Math.log2(freq/A4))+69; const est=A4*Math.pow(2,(midi-69)/12);
-    const cents=Math.round(1200*Math.log2(freq/est)); return {midi,cents};
+    const A4 = 440;
+    const midi = Math.round(12 * Math.log2(freq / A4)) + 69;
+    const est = A4 * Math.pow(2, (midi - 69) / 12);
+    const cents = Math.round(1200 * Math.log2(freq / est));
+    return { midi, cents };
   }
   function autoCorrelate(buf, sr){
-    let SIZE=buf.length, rms=0; for(let i=0;i<SIZE;i++) rms+=buf[i]*buf[i];
-    rms=Math.sqrt(rms/SIZE); if(rms<0.008) return -1;
-    const c=new Float32Array(SIZE);
-    for(let i=0;i<SIZE;i++){ let sum=0; for(let j=0;j<SIZE-i;j++){ sum+=buf[j]*buf[j+i]; } c[i]=sum; }
-    let d=0; while(c[d]>c[d+1]) d++; let maxval=-1,maxpos=-1;
-    for(let i=d;i<SIZE;i++){ if(c[i]>maxval){ maxval=c[i]; maxpos=i; } }
-    const T0=maxpos; return T0<=0?-1:sr/T0;
+    let SIZE = buf.length, rms = 0;
+    for (let i=0;i<SIZE;i++) rms += buf[i]*buf[i];
+    rms = Math.sqrt(rms/SIZE);
+    if (rms < 0.008) return -1;
+    const c = new Float32Array(SIZE);
+    for (let i=0;i<SIZE;i++){ let sum=0; for(let j=0;j<SIZE-i;j++){ sum += buf[j]*buf[j+i]; } c[i]=sum; }
+    let d=0; while (c[d] > c[d+1]) d++;
+    let maxval=-1, maxpos=-1;
+    for (let i=d;i<SIZE;i++){ if (c[i] > maxval){ maxval = c[i]; maxpos = i; } }
+    const T0 = maxpos;
+    return T0 <= 0 ? -1 : sr / T0;
   }
 
   async function startListening(){
     if (listening) return;
     try{
-      const stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false }});
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation:false, noiseSuppression:false }
+      });
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       audioCtxRef.current = ctx;
-      const analyser = ctx.createAnalyser(); analyser.fftSize=2048; analyserRef.current = analyser;
+      const analyser = ctx.createAnalyser(); analyser.fftSize = 2048; analyserRef.current = analyser;
       const src = ctx.createMediaStreamSource(stream); src.connect(analyser);
       bufferRef.current = new Float32Array(analyser.fftSize);
       setListening(true); loop();
     }catch(e){ console.error(e); setFeedback("Microphone permission denied."); }
   }
-  function stopListening(){ if(rafRef.current) cancelAnimationFrame(rafRef.current); setListening(false); }
+  function stopListening(){
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    setListening(false);
+  }
 
   function loop(){
-    const analyser=analyserRef.current, buf=bufferRef.current, sr=audioCtxRef.current?.sampleRate||44100;
-    if(!analyser||!buf) return;
+    const analyser = analyserRef.current, buf = bufferRef.current, sr = audioCtxRef.current?.sampleRate || 44100;
+    if (!analyser || !buf) return;
     analyser.getFloatTimeDomainData(buf);
     const freq = autoCorrelate(buf, sr);
-    if (freq>0 && freq<1500){
-      const {midi,cents} = freqToMidiAndCents(freq);
-      // Convert detected CONCERT pitch → WRITTEN treble-Bb by +2 semitones
-      const writtenMidi = midi + 2;
+    if (freq > 0 && freq < 1500) {
+      const { midi, cents } = freqToMidiAndCents(freq);
+      const writtenMidi = midi + 2; // CONCERT → WRITTEN (treble Bb) = +2 semitones
       const playedNameWritten = nameFromMidi(writtenMidi);
       const targetName = parseWritten(currentNote).name;
       setLiveCents(cents);
       setLivePlayed(playedNameWritten);
-      setLiveOK(Math.abs(cents)<=25 && playedNameWritten===targetName);
+      setLiveOK(Math.abs(cents) <= 25 && playedNameWritten === targetName);
     }
     rafRef.current = requestAnimationFrame(loop);
   }
 
-  useEffect(()=>()=>{ stopListening(); audioCtxRef.current?.close?.(); },[]);
+  useEffect(() => () => { stopListening(); audioCtxRef.current?.close?.(); }, []);
 
-  // -------- Attempts & feedback --------
+  /* -------- Scoring & popup -------- */
   const [attempts, setAttempts] = useState(0);
   const [pitchOK, setPitchOK] = useState(0);
   const [valvesOK, setValvesOK] = useState(0);
   const [bothOK, setBothOK] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [history, setHistory] = useState([]);
+
+  // Popup state
+  const [showResult, setShowResult] = useState(false);
+  const [resultOK, setResultOK] = useState(false);
+  const [resultText, setResultText] = useState("");
+  const popupTimerRef = useRef(null);
 
   function pressValve(v){
     let nv = valveInput.includes(v) ? valveInput.replace(v,"") : valveInput + v;
@@ -140,7 +200,7 @@ export default function App() {
     setValveInput(nv);
     const targetName = parseWritten(currentNote).name;
     const expected = VALVE_MAP[targetName];
-    setFeedback(nv===expected ? `✅ Valves OK (${nv||"0"})` : `Valves ${nv||"0"} — expected ${expected}`);
+    setFeedback(nv === expected ? `✅ Valves OK (${nv || "0"})` : `Valves ${nv || "0"} — expected ${expected}`);
   }
 
   function submitAttempt(){
@@ -150,38 +210,51 @@ export default function App() {
     const pitchGood = livePlayed === targetName && Math.abs(liveCents) <= 25;
     const bothGood = valvesGood && pitchGood;
 
-    setAttempts(a=>a+1);
-    if (valvesGood) setValvesOK(v=>v+1);
-    if (pitchGood) setPitchOK(p=>p+1);
-    if (bothGood){ setBothOK(b=>b+1); setStreak(s=>s+1); } else { setStreak(0); }
+    setAttempts(a => a + 1);
+    if (valvesGood) setValvesOK(v => v + 1);
+    if (pitchGood) setPitchOK(p => p + 1);
+    if (bothGood) { setBothOK(b => b + 1); setStreak(s => s + 1); } else { setStreak(0); }
 
-    setHistory(h=>[{ ts:Date.now(), note:currentNote, inTune:pitchGood, valves:valvesGood, cents:liveCents }, ...h].slice(0,100));
-    setFeedback(bothGood ? `✅ Nailed it! (${targetName}, ${liveCents}¢)` : `Keep refining: ${targetName} (${liveCents}¢) — valves ${valvesGood?"OK":"check"}`);
+    setFeedback(bothGood ? `✅ Nailed it! (${targetName}, ${liveCents}¢)` :
+                           `Keep refining: ${targetName} (${liveCents}¢) — valves ${valvesGood ? "OK" : "check"}`);
 
-    mode==="flashcards" ? nextFlashcard() : nextScaleStep();
+    // Show popup for ~1.2s
+    setResultOK(bothGood);
+    setResultText(bothGood ? "Correct!" : "Incorrect");
+    setShowResult(true);
+    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+    popupTimerRef.current = setTimeout(() => setShowResult(false), 1200);
+
+    // advance
+    mode === "flashcards" ? nextFlashcard() : nextScaleStep();
   }
 
   function resetSession(){
-    setAttempts(0); setPitchOK(0); setValvesOK(0); setBothOK(0); setStreak(0); setHistory([]);
+    setAttempts(0); setPitchOK(0); setValvesOK(0); setBothOK(0); setStreak(0);
     setScaleIndex(0); setScaleAsc(true);
   }
 
-  // init
-  useEffect(()=>{
-    if (mode==="flashcards") nextFlashcard();
-    else { setScaleIndex(0); setScaleAsc(true); setCurrentNote(currentScale[0]); setFeedback(`Scale: ${selectedTonic} major — degree 1/${currentScale.length}`); }
+  // init target
+  useEffect(() => {
+    if (mode === "flashcards") nextFlashcard();
+    else {
+      setScaleIndex(0); setScaleAsc(true);
+      setCurrentNote(currentScale[0]);
+      setFeedback(`Scale: ${selectedTonic} major — degree 1/${currentScale.length}`);
+    }
     // eslint-disable-next-line
-  },[mode, selectedTonic]);
+  }, [mode, selectedTonic]);
 
   const acc      = attempts ? Math.round((bothOK/attempts)*100)  : 0;
   const valveAcc = attempts ? Math.round((valvesOK/attempts)*100): 0;
   const pitchAcc = attempts ? Math.round((pitchOK/attempts)*100) : 0;
 
-  // -------- UI --------
+  /* -------- UI -------- */
   return (
     <div style={{ padding:16, maxWidth:900, margin:"0 auto", fontFamily:"system-ui, sans-serif" }}>
       <h1 style={{ fontSize:24, fontWeight:700, marginBottom:12 }}>🎺 Euph Coach — Treble Bb (3-valve)</h1>
 
+      {/* Controls */}
       <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center", marginBottom:12 }}>
         <Segmented value={mode} onChange={setMode} options={[{label:"Flashcards", value:"flashcards"},{label:"Scales", value:"scales"}]} />
         {mode==="scales" && (
@@ -192,7 +265,7 @@ export default function App() {
             </select>
           </div>
         )}
-        <button onClick={startListening} style={btnPrimary}>{listening?"Listening…":"Start Listening"}</button>
+        <button onClick={startListening} style={btnPrimary}>{listening ? "Listening…" : "Start Listening"}</button>
         {listening && <button onClick={stopListening} style={btn}>Stop</button>}
         <button onClick={resetSession} style={btn}>Reset Session</button>
       </div>
@@ -208,7 +281,13 @@ export default function App() {
       {/* Valve pad */}
       <div style={{ display:"flex", justifyContent:"center", gap:16, marginBottom:12 }}>
         {["1","2","3"].map(v=>(
-          <button key={v} onClick={()=>pressValve(v)} style={{...circleBtn, background: valveInput.includes(v)?"#2563eb":"white", color: valveInput.includes(v)?"white":"black"}}>{v}</button>
+          <button
+            key={v}
+            onClick={()=>pressValve(v)}
+            style={{...circleBtn, background: valveInput.includes(v)?"#2563eb":"white", color: valveInput.includes(v)?"white":"black"}}
+          >
+            {v}
+          </button>
         ))}
       </div>
 
@@ -235,32 +314,16 @@ export default function App() {
         <Stat label="Valves OK" value={`${valvesOK} (${valveAcc}%)`} />
         <Stat label="Pitch OK"  value={`${pitchOK} (${pitchAcc}%)`} />
       </div>
-      <div style={{ textAlign:"center", marginBottom:16 }}>Streak: <span style={{ fontWeight:600 }}>{streak}</span></div>
-
-      {/* History */}
-      <div style={{ maxHeight:220, overflow:"auto", border:"1px solid #ddd", borderRadius:8 }}>
-        <table style={{ width:"100%", fontSize:13, borderCollapse:"collapse" }}>
-          <thead style={{ background:"#f9fafb" }}>
-            <tr>
-              <th style={th}>When</th><th style={th}>Note</th><th style={th}>Valves</th><th style={th}>Pitch</th><th style={{...th, textAlign:"right"}}>¢</th>
-            </tr>
-          </thead>
-          <tbody>
-          {history.map((h,i)=>(
-            <tr key={i} style={{ borderTop:"1px solid #eee" }}>
-              <td style={td}>{new Date(h.ts).toLocaleTimeString()}</td>
-              <td style={td}>{h.note}</td>
-              <td style={{...td, textAlign:"center"}}>{h.valves?"✅":"—"}</td>
-              <td style={{...td, textAlign:"center"}}>{h.inTune?"✅":"—"}</td>
-              <td style={{...td, textAlign:"right"}}>{h.cents>0?"+":""}{Math.round(h.cents)}</td>
-            </tr>
-          ))}
-          {history.length===0 && <tr><td style={{padding:8, textAlign:"center"}} colSpan={5}>No attempts yet.</td></tr>}
-          </tbody>
-        </table>
+      <div style={{ textAlign:"center", marginBottom:16 }}>
+        Streak: <span style={{ fontWeight:600 }}>{streak}</span>
       </div>
 
-      <p style={{ fontSize:12, color:"#555", marginTop:8 }}>Tip: Open preview in a new window (↗︎) so the browser shows the mic permission prompt.</p>
+      {/* Popup overlay */}
+      <ResultPopup visible={showResult} ok={resultOK} text={resultText} />
+
+      <p style={{ fontSize:12, color:"#555", marginTop:8 }}>
+        Tip: Open preview in a new window (↗︎) so the browser shows the mic permission prompt.
+      </p>
     </div>
   );
 }
@@ -270,8 +333,16 @@ function Segmented({ value, onChange, options }) {
   return (
     <div style={{ display:"inline-flex", border:"1px solid #ddd", borderRadius:12, overflow:"hidden" }}>
       {options.map(opt=>(
-        <button key={opt.value} onClick={()=>onChange(opt.value)}
-          style={{ padding:"6px 10px", background:value===opt.value?"#111827":"white", color:value===opt.value?"white":"black", borderRight:"1px solid #eee" }}>
+        <button
+          key={opt.value}
+          onClick={()=>onChange(opt.value)}
+          style={{
+            padding:"6px 10px",
+            background:value===opt.value?"#111827":"white",
+            color:value===opt.value?"white":"black",
+            borderRight:"1px solid #eee"
+          }}
+        >
           {opt.label}
         </button>
       ))}
@@ -293,26 +364,6 @@ function Badge({ label, ok }) {
     </span>
   );
 }
-function ResultPopup({ visible, ok, text }) {
-  if (!visible) return null;
-  const bg = ok ? "rgba(34,197,94,0.95)" : "rgba(220,38,38,0.95)"; // green / red
-  const emoji = ok ? "✅" : "❌";
-  return (
-    <div style={{
-      position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-      background: "rgba(0,0,0,0.25)", zIndex: 50
-    }}>
-      <div style={{
-        padding: "20px 28px", borderRadius: 14, color: "white", background: bg,
-        boxShadow: "0 10px 30px rgba(0,0,0,0.25)", fontSize: 24, fontWeight: 700,
-        display: "flex", gap: 12, alignItems: "center", minWidth: 260, justifyContent: "center"
-      }}>
-        <span style={{ fontSize: 28 }}>{emoji}</span>
-        <span>{text}</span>
-      </div>
-    </div>
-  );
-}
 
 /* ------- styles ------- */
 const btn = { padding:"8px 12px", borderRadius:8, border:"1px solid #ddd", background:"white" };
@@ -320,5 +371,3 @@ const btnPrimary = { ...btn, background:"#2563eb", color:"white", border:"none" 
 const btnSuccess = { ...btn, background:"#16a34a", color:"white", border:"none" };
 const btnPurple  = { ...btn, background:"#7c3aed", color:"white", border:"none" };
 const circleBtn  = { height:64, width:64, borderRadius:"9999px", fontSize:20, fontWeight:700, border:"2px solid #e5e7eb" };
-const th = { padding:8, textAlign:"left", fontWeight:600, fontSize:12, color:"#374151" };
-const td = { padding:8 };
