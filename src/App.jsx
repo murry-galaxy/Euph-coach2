@@ -2,37 +2,38 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import StaffNote from "./StaffNote.jsx";
 
 export default function App() {
-  const [mode, setMode] = useState("flashcards");
+  // -------- Modes --------
+  const [mode, setMode] = useState("flashcards"); // "flashcards" | "scales"
   const [listening, setListening] = useState(false);
   const [feedback, setFeedback] = useState("Press Start Listening, then play the note.");
 
-  const [currentNote, setCurrentNote] = useState("C4");
-  const [valveInput, setValveInput] = useState("");
-
+  // -------- Notes & valves --------
+  const [currentNote, setCurrentNote] = useState("C4"); // written (treble-Bb)
+  const [valveInput, setValveInput] = useState("");     // e.g., "13"
   const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
   const VALVE_MAP = { C:"0","C#":"12", D:"13","D#":"23", E:"12", F:"1","F#":"123", G:"13","G#":"23", A:"12","A#":"1", B:"2" };
 
   const PRACTICE_POOL = useMemo(() => {
     const nameFromMidi = (m)=>NOTE_NAMES[(m%12+12)%12];
     const octaveFromMidi = (m)=>Math.floor(m/12)-1;
-    const arr=[]; for(let m=60;m<=83;m++) arr.push(`${nameFromMidi(m)}${octaveFromMidi(m)}`);
+    const arr=[]; for(let m=60;m<=83;m++) arr.push(`${nameFromMidi(m)}${octaveFromMidi(m)}`); // C4..B5
     return arr;
   }, []);
 
   function parseWritten(note) {
     const m = note.match(/([A-G](?:#|b)?)(\d)/);
     if (!m) return { name:"C", octave:4 };
-    let name = m[1];
-    const FLAT_TO_SHARP = { Ab:"G#", Bb:"A#", Db:"C#", Eb:"D#", Gb:"F#" };
+    let name = m[1]; const FLAT_TO_SHARP = { Ab:"G#", Bb:"A#", Db:"C#", Eb:"D#", Gb:"F#" };
     if (name.includes("b")) name = FLAT_TO_SHARP[name] || name;
     return { name, octave: Number(m[2]) };
   }
 
+  // -------- Scale mode (written major) --------
   const WRITTEN_TONICS = ["C","G","D","F","Bb","A","E","Eb"];
   const [selectedTonic, setSelectedTonic] = useState("C");
   const [scaleIndex, setScaleIndex] = useState(0);
   const [scaleAsc, setScaleAsc] = useState(true);
-  const SCALE_STEPS = [2,2,1,2,2,2,1];
+  const SCALE_STEPS = [2,2,1,2,2,2,1]; // W W H W W W H
 
   function midiFromNoteName(name, octave){ const idx=NOTE_NAMES.indexOf(name); return (octave+1)*12+idx; }
   function nameFromMidi(m){ return NOTE_NAMES[(m%12+12)%12]; }
@@ -67,6 +68,7 @@ export default function App() {
     setFeedback(`Scale: ${selectedTonic} major — degree ${idx+1}/${seq.length}`);
   }
 
+  // -------- Pitch detection --------
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const bufferRef = useRef(null);
@@ -74,7 +76,7 @@ export default function App() {
 
   const [liveCents, setLiveCents] = useState(0);
   const [livePlayed, setLivePlayed] = useState(null);
-  const [liveOK, setLiveOK] = useState(false);
+  const [liveOK, setLiveOK] = useState(false); // <-- used to color the notehead
 
   function freqToMidiAndCents(freq){
     const A4=440; const midi=Math.round(12*Math.log2(freq/A4))+69; const est=A4*Math.pow(2,(midi-69)/12);
@@ -111,7 +113,8 @@ export default function App() {
     const freq = autoCorrelate(buf, sr);
     if (freq>0 && freq<1500){
       const {midi,cents} = freqToMidiAndCents(freq);
-      const writtenMidi = midi + 2; // CONCERT -> WRITTEN Bb treble
+      // Convert detected CONCERT pitch → WRITTEN treble-Bb by +2 semitones
+      const writtenMidi = midi + 2;
       const playedNameWritten = nameFromMidi(writtenMidi);
       const targetName = parseWritten(currentNote).name;
       setLiveCents(cents);
@@ -123,6 +126,7 @@ export default function App() {
 
   useEffect(()=>()=>{ stopListening(); audioCtxRef.current?.close?.(); },[]);
 
+  // -------- Attempts & feedback --------
   const [attempts, setAttempts] = useState(0);
   const [pitchOK, setPitchOK] = useState(0);
   const [valvesOK, setValvesOK] = useState(0);
@@ -162,6 +166,7 @@ export default function App() {
     setScaleIndex(0); setScaleAsc(true);
   }
 
+  // init
   useEffect(()=>{
     if (mode==="flashcards") nextFlashcard();
     else { setScaleIndex(0); setScaleAsc(true); setCurrentNote(currentScale[0]); setFeedback(`Scale: ${selectedTonic} major — degree 1/${currentScale.length}`); }
@@ -172,6 +177,7 @@ export default function App() {
   const valveAcc = attempts ? Math.round((valvesOK/attempts)*100): 0;
   const pitchAcc = attempts ? Math.round((pitchOK/attempts)*100) : 0;
 
+  // -------- UI --------
   return (
     <div style={{ padding:16, maxWidth:900, margin:"0 auto", fontFamily:"system-ui, sans-serif" }}>
       <h1 style={{ fontSize:24, fontWeight:700, marginBottom:12 }}>🎺 Euph Coach — Treble Bb (3-valve)</h1>
@@ -191,24 +197,28 @@ export default function App() {
         <button onClick={resetSession} style={btn}>Reset Session</button>
       </div>
 
-      <div style={{ textAlign:"center", marginBottom:12 }}>
-        <div style={{ fontSize:48, fontFamily:"monospace" }}>{currentNote}</div>
-        <div style={{ fontSize:12, color:"#555", marginTop:4 }}>
-          Pitch window: ±25¢ | Press valves, then play & Submit
-        </div>
+      {/* Target note on treble staff (colour = green when liveOK) */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+        <StaffNote note={currentNote} ok={liveOK} />
+      </div>
+      <div style={{ textAlign: "center", fontSize: 12, color: "#555", marginTop: -6, marginBottom: 12 }}>
+        Target: {currentNote} • Pitch window: ±25¢
       </div>
 
+      {/* Valve pad */}
       <div style={{ display:"flex", justifyContent:"center", gap:16, marginBottom:12 }}>
         {["1","2","3"].map(v=>(
           <button key={v} onClick={()=>pressValve(v)} style={{...circleBtn, background: valveInput.includes(v)?"#2563eb":"white", color: valveInput.includes(v)?"white":"black"}}>{v}</button>
         ))}
       </div>
 
+      {/* Live meter */}
       <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:12 }}>
         <Badge label={`Heard: ${livePlayed ?? "–"}`} ok={liveOK} />
         <Badge label={`${liveCents>0?"+":""}${liveCents}¢`} ok={Math.abs(liveCents)<=25} />
       </div>
 
+      {/* Actions */}
       <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:16 }}>
         {mode==="flashcards" ? (
           <button onClick={nextFlashcard} style={btnSuccess}>Next Note</button>
@@ -218,6 +228,7 @@ export default function App() {
         <button onClick={submitAttempt} style={btnPurple}>Submit</button>
       </div>
 
+      {/* Scorecards */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4, minmax(0, 1fr))", gap:8, marginBottom:12 }}>
         <Stat label="Attempts"  value={attempts} />
         <Stat label="Both OK"   value={`${bothOK} (${acc}%)`} />
@@ -226,6 +237,7 @@ export default function App() {
       </div>
       <div style={{ textAlign:"center", marginBottom:16 }}>Streak: <span style={{ fontWeight:600 }}>{streak}</span></div>
 
+      {/* History */}
       <div style={{ maxHeight:220, overflow:"auto", border:"1px solid #ddd", borderRadius:8 }}>
         <table style={{ width:"100%", fontSize:13, borderCollapse:"collapse" }}>
           <thead style={{ background:"#f9fafb" }}>
@@ -253,6 +265,7 @@ export default function App() {
   );
 }
 
+/* ------- tiny UI bits ------- */
 function Segmented({ value, onChange, options }) {
   return (
     <div style={{ display:"inline-flex", border:"1px solid #ddd", borderRadius:12, overflow:"hidden" }}>
@@ -281,6 +294,7 @@ function Badge({ label, ok }) {
   );
 }
 
+/* ------- styles ------- */
 const btn = { padding:"8px 12px", borderRadius:8, border:"1px solid #ddd", background:"white" };
 const btnPrimary = { ...btn, background:"#2563eb", color:"white", border:"none" };
 const btnSuccess = { ...btn, background:"#16a34a", color:"white", border:"none" };
