@@ -24,11 +24,24 @@ export default function ValveCoach() {
   const [valveInput, setValveInput] = useState(""); // "" means open
   const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 
-  // 4th octave only C4..B4
-  const VALVES_BY_NOTE = {
-    "C4":  ["0"], "C#4": ["12"], "D4": ["1"], "D#4": ["2"], "E4": ["0"], "F4": ["1"],
-    "F#4": ["23"], "G4": ["0"], "G#4": ["23"], "A4": ["12"], "A#4": ["1"], "B4": ["2"]
-  };
+  // 4th-octave (C4..B4) — Dave’s custom 3-valve map
+const VALVES_BY_NOTE = {
+  "C4":  ["0"],
+
+  "C#4": ["123"], "Db4": ["123"],
+  "D4":  ["13"],
+  "D#4": ["23"],  "Eb4": ["23"],
+  "E4":  ["12"],
+
+  "F4":  ["1"],
+  "F#4": ["2"],   "Gb4": ["2"],
+  "G4":  ["0"],
+  "G#4": ["23"],  "Ab4": ["23"],
+  "A4":  ["12"],
+  "A#4": ["1"],   "Bb4": ["1"],
+  "B4":  ["2"]
+};
+
 
   const PRACTICE_POOL = useMemo(() => {
     const nameFromMidi = (m)=>NOTE_NAMES[(m%12+12)%12];
