@@ -172,11 +172,9 @@ export default function PitchCoach() {
   const btnPrimary = { ...btn, background:"#2563eb", color:"white", border:"none" };
   const btnSuccess = { ...btn, background:"#16a34a", color:"white", border:"none" };
 
-  // Meter UI
   const clamped = Math.max(-100, Math.min(100, liveCents || 0));
   const pct = (clamped + 100) / 200 * 100;
 
-  // Target freq (concert) for display
   const targetWMidi = targetWrittenMidi(currentNote);
   const targetConcertMidi = targetWMidi - 2;
   const targetHz = Math.round((440 * Math.pow(2, (targetConcertMidi - 69) / 12)) * 10) / 10;
@@ -214,16 +212,8 @@ export default function PitchCoach() {
           <span>-100¢</span><span>0¢</span><span>+100¢</span>
         </div>
         <div style={{ position:"relative", height:18, background:"#f3f4f6", borderRadius:999 }}>
-          {/* Green zone */}
-          <div style={{
-            position:"absolute", left:"37.5%", width:"25%", top:0, bottom:0,
-            background:"rgba(34,197,94,0.25)", borderRadius:999
-          }}/>
-          {/* Needle */}
-          <div style={{
-            position:"absolute", left:`calc(${pct}% - 1px)`, top:-6, bottom:-6, width:2,
-            background:"#111827", borderRadius:2, boxShadow:"0 0 0 2px rgba(0,0,0,0.03)"
-          }}/>
+          <div style={{ position:"absolute", left:"37.5%", width:"25%", top:0, bottom:0, background:"rgba(34,197,94,0.25)", borderRadius:999 }}/>
+          <div style={{ position:"absolute", left:`calc(${pct}% - 1px)`, top:-6, bottom:-6, width:2, background:"#111827", borderRadius:2, boxShadow:"0 0 0 2px rgba(0,0,0,0.03)" }}/>
         </div>
       </div>
 
@@ -231,9 +221,7 @@ export default function PitchCoach() {
         Target {currentNote} • Concert ≈ {targetHz} Hz &nbsp;|&nbsp; Detected {detFreq ? `${detFreq.toFixed(1)} Hz` : "—"} &nbsp;|&nbsp; Offset {liveCents>0?"+":""}{liveCents ?? 0}¢
       </div>
 
-      <p style={{ textAlign:"center", marginTop:10, color:"#555" }}>
-        Centre the needle into the green band (±25¢) to be in tune.
-      </p>
+      <p style={{ textAlign:"center", marginTop:10, color:"#555" }}>Centre the needle into the green band (±25¢) to be in tune.</p>
 
       <ResultPopup visible={showResult} ok={resultOK} text={resultText} />
     </div>
