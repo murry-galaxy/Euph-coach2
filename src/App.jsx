@@ -47,31 +47,34 @@ export default function App() {
   const [listening, setListening] = useState(false);
   const [feedback, setFeedback] = useState("Press Start Listening, then play the note.");
 
-  /* -------- Notes & valves -------- */
-  const [currentNote, setCurrentNote] = useState("C4"); // written (treble-Bb)
+  /* -------- Notes & valves (4th octave only) -------- */
+  const [currentNote, setCurrentNote] = useState("C4"); // written (treble-Bb), constrained to C4..B4
   const [valveInput, setValveInput] = useState(""); // e.g., "13" or "" for open
   const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-  const VALVE_MAP = {
-  C: "0",
-  "C#": "12",
-  D: "13",
-  "D#": "23",
-  E: "12",
-  F: "1",
-  "F#": "2",
-  G: "0",
-  "G#": "23",
-  A: "12",
-  "A#": "1",
-  B: "2",
-};
 
+  // 4th-octave only (C4..B4), written treble-Bb, 3-valve
+  const VALVES_BY_NOTE = {
+    "C4":  ["0"],
+    "C#4": ["12"],  // Db4
+    "D4":  ["1"],
+    "D#4": ["2"],   // Eb4
+    "E4":  ["0"],
+    "F4":  ["1"],
+    "F#4": ["23"],  // Gb4
+    "G4":  ["0"],
+    "G#4": ["23"],  // Ab4
+    "A4":  ["12"],
+    "A#4": ["1"],   // Bb4
+    "B4":  ["2"]
+  };
 
   const PRACTICE_POOL = useMemo(() => {
     const nameFromMidi = (m)=>NOTE_NAMES[(m%12+12)%12];
     const octaveFromMidi = (m)=>Math.floor(m/12)-1;
     const arr = [];
-    for (let m = 60; m <= 83; m++) arr.push(`${nameFromMidi(m)}${octaveFromMidi(m)}`); // C4..B5
+    for (let m = 60; m <= 71; m++) { // C4 (60) .. B4 (71)
+      arr.push(`${nameFromMidi(m)}${octaveFromMidi(m)}`);
+    }
     return arr;
   }, []);
 
@@ -83,8 +86,23 @@ export default function App() {
     if (name.includes("b")) name = FLAT_TO_SHARP[name] || name;
     return { name, octave: Number(m[2]) };
   }
+  function normalizeToSharp(name) {
+    const FLAT_TO_SHARP = { Ab:"G#", Bb:"A#", Db:"C#", Eb:"D#", Gb:"F#" };
+    return name.includes("b") ? (FLAT_TO_SHARP[name] || name) : name;
+  }
+  function expectedValvesFor(note) {
+    const m = String(note).match(/^([A-G](?:#|b)?)(\d)$/);
+    if (!m) return ["0"];
+    const name = normalizeToSharp(m[1]);
+    const oct  = m[2];
+    return VALVES_BY_NOTE[`${name}${oct}`] || ["0"];
+  }
+  function normalizeInput(vIn) {
+    const v = vIn || "0";
+    return v === "0" ? "0" : v.split("").sort().join("");
+  }
 
-  /* -------- Scale mode (written major) -------- */
+  /* -------- Scale mode (written major) — clamped to 4th octave -------- */
   const WRITTEN_TONICS = ["C","G","D","F","Bb","A","E","Eb"];
   const [selectedTonic, setSelectedTonic] = useState("C");
   const [scaleIndex, setScaleIndex] = useState(0);
@@ -95,19 +113,20 @@ export default function App() {
   function nameFromMidi(m){ return NOTE_NAMES[(m%12+12)%12]; }
   function octaveFromMidi(m){ return Math.floor(m/12)-1; }
 
-  function buildWrittenScale(tonic, octave=4){
-    const MAP = { Bb: "A#", Eb: "D#" };
+  function buildWrittenScale4(tonic) {
+    const MAP = { Bb:"A#", Eb:"D#" };
     const tonicSharp = MAP[tonic] || tonic;
-    const tMidi = midiFromNoteName(tonicSharp, octave);
-    const seq = [tMidi]; let cur = tMidi;
+    const tMidi = midiFromNoteName(tonicSharp, 4); // start in 4th octave
+    const seq = [tMidi];
+    let cur = tMidi;
     for (const s of SCALE_STEPS) { cur += s; seq.push(cur); }
-    return seq.map(m => `${nameFromMidi(m)}${octaveFromMidi(m)}`);
+    const CLAMP_MAX = 71; // B4
+    const clamped = seq.filter(m => m <= CLAMP_MAX);
+    const safe = clamped.length ? clamped : [tMidi];
+    return safe.map(m => `${nameFromMidi(m)}${octaveFromMidi(m)}`);
   }
 
-  const currentScale = useMemo(() => {
-    const startOct = (selectedTonic === "A" || selectedTonic === "B") ? 3 : 4;
-    return buildWrittenScale(selectedTonic, startOct);
-  }, [selectedTonic]);
+  const currentScale = useMemo(() => buildWrittenScale4(selectedTonic), [selectedTonic]);
 
   function nextFlashcard() {
     const n = PRACTICE_POOL[Math.floor(Math.random()*PRACTICE_POOL.length)];
@@ -117,9 +136,10 @@ export default function App() {
   }
   function nextScaleStep() {
     const seq = currentScale;
+    if (!seq.length) return;
     let idx = scaleIndex + (scaleAsc ? 1 : -1);
-    if (idx >= seq.length) { setScaleAsc(false); idx = seq.length - 2; }
-    if (idx < 0) { setScaleAsc(true); idx = 0; }
+    if (idx >= seq.length) { setScaleAsc(false); idx = Math.max(0, seq.length - 2); }
+    if (idx < 0)            { setScaleAsc(true);  idx = 0; }
     setScaleIndex(idx);
     setCurrentNote(seq[idx]);
     setValveInput("");
@@ -213,17 +233,24 @@ export default function App() {
     let nv = valveInput.includes(v) ? valveInput.replace(v,"") : valveInput + v;
     nv = nv.split("").sort().join("");
     setValveInput(nv);
-    const targetName = parseWritten(currentNote).name;
-    const expected = VALVE_MAP[targetName];
-    setFeedback(nv === expected ? `✅ Valves OK (${nv || "0"})` : `Valves ${nv || "0"} — expected ${expected}`);
+
+    const expectedList = expectedValvesFor(currentNote);
+    const nvNorm = normalizeInput(nv);
+    const valvesGood = expectedList.includes(nvNorm);
+
+    setFeedback(
+      valvesGood
+        ? `✅ Valves OK (${nvNorm})`
+        : `Valves ${nvNorm || "0"} — expected ${expectedList.join(" or ")}`
+    );
   }
 
-  // NEW: explicit Open (0) handler
+  // Explicit Open (0) handler
   function setOpenValves() {
     setValveInput("");
-    const targetName = parseWritten(currentNote).name;
-    const expected = VALVE_MAP[targetName];
-    setFeedback(expected === "0" ? "✅ Valves OK (0)" : `Valves 0 — expected ${expected}`);
+    const expectedList = expectedValvesFor(currentNote);
+    const ok = expectedList.includes("0");
+    setFeedback(ok ? "✅ Valves OK (0)" : `Valves 0 — expected ${expectedList.join(" or ")}`);
   }
 
   // Optional: keyboard shortcut "0" to set Open
@@ -236,19 +263,22 @@ export default function App() {
   }, []);
 
   function submitAttempt(){
+    const expectedList = expectedValvesFor(currentNote);
+    const valvesGood = expectedList.includes(normalizeInput(valveInput)); // "" means open (0)
     const targetName = parseWritten(currentNote).name;
-    const expected = VALVE_MAP[targetName];
-    const valvesGood = (valveInput || "0") === expected; // "" means open (0)
     const pitchGood = livePlayed === targetName && Math.abs(liveCents) <= 25;
     const bothGood = valvesGood && pitchGood;
 
     setAttempts(a => a + 1);
     if (valvesGood) setValvesOK(v => v + 1);
-    if (pitchGood) setPitchOK(p => p + 1);
-    if (bothGood) { setBothOK(b => b + 1); setStreak(s => s + 1); } else { setStreak(0); }
+    if (pitchGood)  setPitchOK(p => p + 1);
+    if (bothGood)   { setBothOK(b => b + 1); setStreak(s => s + 1); } else { setStreak(0); }
 
-    setFeedback(bothGood ? `✅ Nailed it! (${targetName}, ${liveCents}¢)` :
-                           `Keep refining: ${targetName} (${liveCents}¢) — valves ${valvesGood ? "OK" : "check"}`);
+    setFeedback(
+      bothGood
+        ? `✅ Nailed it! (${targetName}, ${liveCents}¢)`
+        : `Keep refining: ${targetName} (${liveCents}¢) — valves ${valvesGood ? "OK" : "check"}`
+    );
 
     // Show popup for ~1.2s
     setResultOK(bothGood);
@@ -325,7 +355,7 @@ export default function App() {
             {v}
           </button>
         ))}
-        {/* NEW: explicit open option */}
+        {/* Explicit open option */}
         <button
           onClick={setOpenValves}
           title="Open (no valves)"
@@ -371,7 +401,7 @@ export default function App() {
       <ResultPopup visible={showResult} ok={resultOK} text={resultText} />
 
       <p style={{ fontSize:12, color:"#555", marginTop:8 }}>
-        Tip: Open preview in a new window (↗︎) so the browser shows the mic permission prompt.
+        Tip: Open in a new tab/window so the browser shows the mic permission prompt.
       </p>
     </div>
   );
@@ -419,4 +449,4 @@ const btn = { padding:"8px 12px", borderRadius:8, border:"1px solid #ddd", backg
 const btnPrimary = { ...btn, background:"#2563eb", color:"white", border:"none" };
 const btnSuccess = { ...btn, background:"#16a34a", color:"white", border:"none" };
 const btnPurple  = { ...btn, background:"#7c3aed", color:"white", border:"none" };
-const circleBtn  = { height:64, width:64, borderRadius:"9999px", fontSize:20, fontWeight:700, border:"2px solid #e5e7eb", lineHeight:"1.1" };
+const circleBtn  = { height:64, width:64, borderRadius:"9999px", fontSize:20, fontWeight:700, border:"2px solid #e5e7eb", lineHeight:"1.1", textAlign:"center" };
