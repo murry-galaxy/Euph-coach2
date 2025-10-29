@@ -51,7 +51,21 @@ export default function App() {
   const [currentNote, setCurrentNote] = useState("C4"); // written (treble-Bb)
   const [valveInput, setValveInput] = useState(""); // e.g., "13" or "" for open
   const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-  const VALVE_MAP = { C:"0","C#":"12", D:"13","D#":"23", E:"12", F:"1","F#":"123", G:"13","G#":"23", A:"12","A#":"1", B:"2" };
+  const VALVE_MAP = {
+  C: "0",
+  "C#": "12",
+  D: "13",
+  "D#": "23",
+  E: "12",
+  F: "1",
+  "F#": "2",
+  G: "0",
+  "G#": "23",
+  A: "12",
+  "A#": "1",
+  B: "2",
+};
+
 
   const PRACTICE_POOL = useMemo(() => {
     const nameFromMidi = (m)=>NOTE_NAMES[(m%12+12)%12];
