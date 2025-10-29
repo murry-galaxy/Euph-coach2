@@ -7,33 +7,8 @@ function ResultPopup({ visible, ok, text }) {
   const bg = ok ? "rgba(34,197,94,0.95)" : "rgba(220,38,38,0.95)"; // green / red
   const emoji = ok ? "✅" : "❌";
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.25)",
-        zIndex: 50,
-      }}
-    >
-      <div
-        style={{
-          padding: "20px 28px",
-          borderRadius: 14,
-          color: "white",
-          background: bg,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-          fontSize: 24,
-          fontWeight: 700,
-          display: "flex",
-          gap: 12,
-          alignItems: "center",
-          minWidth: 260,
-          justifyContent: "center",
-        }}
-      >
+    <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.25)", zIndex: 50 }}>
+      <div style={{ padding: "20px 28px", borderRadius: 14, color: "white", background: bg, boxShadow: "0 10px 30px rgba(0,0,0,0.25)", fontSize: 24, fontWeight: 700, display: "flex", gap: 12, alignItems: "center", minWidth: 260, justifyContent: "center" }}>
         <span style={{ fontSize: 28 }}>{emoji}</span>
         <span>{text}</span>
       </div>
@@ -146,22 +121,27 @@ export default function App() {
     setFeedback(`Scale: ${selectedTonic} major — degree ${idx + 1}/${seq.length}`);
   }
 
-  /* -------- Pitch detection -------- */
+  /* -------- Pitch detection (compare to TARGET note) -------- */
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const bufferRef = useRef(null);
   const rafRef = useRef(null);
 
-  const [liveCents, setLiveCents] = useState(0);
-  const [livePlayed, setLivePlayed] = useState(null);
-  const [liveOK, setLiveOK] = useState(false); // drives StaffNote colour
+  const [liveCents, setLiveCents] = useState(0);          // cents from TARGET (not nearest semitone)
+  const [livePlayed, setLivePlayed] = useState(null);     // written note name (rounded)
+  const [liveOK, setLiveOK] = useState(false);            // drives StaffNote colour
 
-  function freqToMidiAndCents(freq){
+  function freqToMidi(freq){
     const A4 = 440;
-    const midi = Math.round(12 * Math.log2(freq / A4)) + 69;
-    const est = A4 * Math.pow(2, (midi - 69) / 12);
-    const cents = Math.round(1200 * Math.log2(freq / est));
-    return { midi, cents };
+    return Math.round(12 * Math.log2(freq / A4)) + 69; // nearest MIDI (concert)
+  }
+  function midiToFreq(midi){
+    const A4 = 440;
+    return A4 * Math.pow(2, (midi - 69) / 12);
+  }
+  function centsFromTarget(freqDetected, targetConcertMidi){
+    const targetFreq = midiToFreq(targetConcertMidi);
+    return Math.round(1200 * Math.log2(freqDetected / targetFreq));
   }
   function autoCorrelate(buf, sr){
     let SIZE = buf.length, rms = 0;
@@ -177,12 +157,19 @@ export default function App() {
     return T0 <= 0 ? -1 : sr / T0;
   }
 
+  function targetWrittenMidi(noteStr){
+    const m = noteStr.match(/^([A-G](?:#|b)?)(\d)$/);
+    if (!m) return 60; // C4 fallback
+    const sharp = normalizeToSharp(m[1]);
+    const oct = Number(m[2]);
+    const idx = NOTE_NAMES.indexOf(sharp);
+    return (oct + 1) * 12 + idx; // written MIDI
+  }
+
   async function startListening(){
     if (listening) return;
     try{
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation:false, noiseSuppression:false }
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:false, noiseSuppression:false }});
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       audioCtxRef.current = ctx;
       const analyser = ctx.createAnalyser(); analyser.fftSize = 2048; analyserRef.current = analyser;
@@ -202,13 +189,19 @@ export default function App() {
     analyser.getFloatTimeDomainData(buf);
     const freq = autoCorrelate(buf, sr);
     if (freq > 0 && freq < 1500) {
-      const { midi, cents } = freqToMidiAndCents(freq);
-      const writtenMidi = midi + 2; // CONCERT → WRITTEN (treble Bb) = +2 semitones
-      const playedNameWritten = nameFromMidi(writtenMidi);
-      const targetName = parseWritten(currentNote).name;
+      // Compute cents relative to the TARGET note (concert)
+      const targetWMidi = targetWrittenMidi(currentNote);     // written MIDI for target
+      const targetConcertMidi = targetWMidi - 2;              // Bb treble: written is +2 above concert → concert = written - 2
+      const cents = centsFromTarget(freq, targetConcertMidi); // cents from TARGET
       setLiveCents(cents);
-      setLivePlayed(playedNameWritten);
-      setLiveOK(Math.abs(cents) <= 25 && playedNameWritten === targetName);
+
+      // For display, round detected to nearest MIDI (concert) → convert to written name (+2)
+      const detMidiConcert = freqToMidi(freq);
+      const detWrittenName = nameFromMidi(detMidiConcert + 2); // name only
+      setLivePlayed(detWrittenName);
+
+      // In-tune if within ±25¢ of target (name doesn’t matter now; cents are against target)
+      setLiveOK(Math.abs(cents) <= 25);
     }
     rafRef.current = requestAnimationFrame(loop);
   }
@@ -263,10 +256,13 @@ export default function App() {
   }, []);
 
   function submitAttempt(){
+    // Pitch check: use cents-from-target computed in loop
+    const pitchGood = Math.abs(liveCents) <= 25;
+
+    // Valves check: 4th-octave map
     const expectedList = expectedValvesFor(currentNote);
     const valvesGood = expectedList.includes(normalizeInput(valveInput)); // "" means open (0)
-    const targetName = parseWritten(currentNote).name;
-    const pitchGood = livePlayed === targetName && Math.abs(liveCents) <= 25;
+
     const bothGood = valvesGood && pitchGood;
 
     setAttempts(a => a + 1);
@@ -276,8 +272,8 @@ export default function App() {
 
     setFeedback(
       bothGood
-        ? `✅ Nailed it! (${targetName}, ${liveCents}¢)`
-        : `Keep refining: ${targetName} (${liveCents}¢) — valves ${valvesGood ? "OK" : "check"}`
+        ? `✅ Nailed it! (${currentNote}, ${liveCents}¢)`
+        : `Keep refining: ${currentNote} (${liveCents}¢) — valves ${valvesGood ? "OK" : "check"}`
     );
 
     // Show popup for ~1.2s
@@ -314,7 +310,8 @@ export default function App() {
   /* -------- UI -------- */
   return (
     <div style={{ padding:16, maxWidth:900, margin:"0 auto", fontFamily:"system-ui, sans-serif" }}>
-      <h1 style={{ fontSize:24, fontWeight:700, marginBottom:12 }}>🎺 Euph Coach — Treble Bb (3-valve)</h1>
+      <h1 style={{ fontSize:24, fontWeight:700, marginBottom:0 }}>Euphonium Coach</h1>
+      <div style={{ fontSize:12, color:"#6b7280", marginBottom:12 }}>you can view it at dave.ltd</div>
 
       {/* Controls */}
       <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center", marginBottom:12 }}>
