@@ -1,3 +1,4 @@
+// src/pages/PitchCoach.jsx
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import StaffNote from "../StaffNote.jsx";
 
@@ -21,7 +22,7 @@ export default function PitchCoach() {
   const [listening, setListening] = useState(false);
   const [feedback, setFeedback] = useState("Press Start Listening, then centre the meter.");
 
-  const [currentNote, setCurrentNote] = useState("C4"); // written
+  const [currentNote, setCurrentNote] = useState("C4"); // written (no transposition anywhere)
   const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 
   // Flashcards pool: C4..B4
@@ -73,7 +74,7 @@ export default function PitchCoach() {
     setFeedback(`Scale: ${selectedTonic} — degree ${idx + 1}/${seq.length}`);
   }
 
-  // Pitch detection against TARGET
+  // -------- Pitch detection (NO TRANSPOSITION) ----------
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const bufferRef = useRef(null);
@@ -82,40 +83,40 @@ export default function PitchCoach() {
   const [liveCents, setLiveCents] = useState(0);
   const [detFreq, setDetFreq] = useState(null);
 
-  function freqToMidi(freq){
-    const A4 = 440;
-    return Math.round(12 * Math.log2(freq / A4)) + 69;
-  }
   function midiToFreq(midi){
-    const A4 = 440;
-    return A4 * Math.pow(2, (midi - 69) / 12);
+    // A4=440Hz
+    return 440 * Math.pow(2, (midi - 69) / 12);
   }
-  function centsFromTarget(freqDetected, targetConcertMidi){
-    const targetFreq = midiToFreq(targetConcertMidi);
+  function centsFromTarget(freqDetected, targetMidi){
+    const targetFreq = midiToFreq(targetMidi);
     return Math.round(1200 * Math.log2(freqDetected / targetFreq));
   }
+
   function autoCorrelate(buf, sr){
+    // Basic ACF; returns frequency in Hz or -1 if no stable pitch
     let SIZE = buf.length, rms = 0;
     for (let i=0;i<SIZE;i++) rms += buf[i]*buf[i];
     rms = Math.sqrt(rms/SIZE);
-    if (rms < 0.008) return -1;
+    if (rms < 0.008) return -1; // too quiet / noise floor
     const c = new Float32Array(SIZE);
     for (let i=0;i<SIZE;i++){ let sum=0; for(let j=0;j<SIZE-i;j++){ sum += buf[j]*buf[j+i]; } c[i]=sum; }
-    let d=0; while (c[d] > c[d+1]) d++;
+    let d=0; while (d+1 < SIZE && c[d] > c[d+1]) d++;
     let maxval=-1, maxpos=-1;
     for (let i=d;i<SIZE;i++){ if (c[i] > maxval){ maxval = c[i]; maxpos = i; } }
     const T0 = maxpos;
     return T0 <= 0 ? -1 : sr / T0;
   }
 
+  // Parse "C#4" → written MIDI index (used as the *target* without any transposition)
   function targetWrittenMidi(noteStr){
     const m = noteStr.match(/^([A-G](?:#|b)?)(\d)$/);
-    if (!m) return 60;
+    if (!m) return 60; // default C4
+    const [_, raw, octStr] = m;
     const FLAT_TO_SHARP = { Ab:"G#", Bb:"A#", Db:"C#", Eb:"D#", Gb:"F#" };
-    const sharp = m[1].includes("b") ? (FLAT_TO_SHARP[m[1]] || m[1]) : m[1];
-    const idx = NOTE_NAMES.indexOf(sharp);
-    const oct = Number(m[2]);
-    return (oct + 1) * 12 + idx; // written MIDI
+    const name = raw.includes("b") ? (FLAT_TO_SHARP[raw] || raw) : raw;
+    const oct = Number(octStr);
+    const idx = NOTE_NAMES.indexOf(name);
+    return (oct + 1) * 12 + idx;
   }
 
   async function startListening(){
@@ -127,29 +128,35 @@ export default function PitchCoach() {
       const analyser = ctx.createAnalyser(); analyser.fftSize = 2048; analyserRef.current = analyser;
       const src = ctx.createMediaStreamSource(stream); src.connect(analyser);
       bufferRef.current = new Float32Array(analyser.fftSize);
-      setListening(true); loop();
-    }catch(e){ console.error(e); setFeedback("Microphone permission denied."); }
+      setListening(true);
+      rafRef.current = requestAnimationFrame(loop);
+    }catch(e){ console.error(e); setFeedback("Microphone permission denied or unavailable."); }
   }
   function stopListening(){
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
     setListening(false);
   }
 
   function loop(){
-    const analyser = analyserRef.current, buf = bufferRef.current, sr = audioCtxRef.current?.sampleRate || 44100;
-    if (!analyser || !buf) return;
+    if (!listening) return;
+    const analyser = analyserRef.current, buf = bufferRef.current, ctx = audioCtxRef.current;
+    if (!analyser || !buf || !ctx) return;
     analyser.getFloatTimeDomainData(buf);
-    const freq = autoCorrelate(buf, sr);
+    const freq = autoCorrelate(buf, ctx.sampleRate || 44100);
     if (freq > 0 && freq < 1500) {
       setDetFreq(freq);
-      const targetWMidi = targetWrittenMidi(currentNote);
-      const targetConcertMidi = targetWMidi - 2; // written → concert
-      setLiveCents(centsFromTarget(freq, targetConcertMidi));
+      const targetMidi = targetWrittenMidi(currentNote);           // NO transposition
+      const cents = centsFromTarget(freq, targetMidi);             // cents vs written target
+      setLiveCents(Math.max(-100, Math.min(100, cents)));          // clamp for display
     }
     rafRef.current = requestAnimationFrame(loop);
   }
 
-  useEffect(() => () => { stopListening(); audioCtxRef.current?.close?.(); }, []);
+  useEffect(() => () => {
+    stopListening();
+    audioCtxRef.current?.close?.();
+  }, []);
 
   // Popup state
   const [showResult, setShowResult] = useState(false);
@@ -172,12 +179,13 @@ export default function PitchCoach() {
   const btnPrimary = { ...btn, background:"#2563eb", color:"white", border:"none" };
   const btnSuccess = { ...btn, background:"#16a34a", color:"white", border:"none" };
 
+  // Meter UI
   const clamped = Math.max(-100, Math.min(100, liveCents || 0));
   const pct = (clamped + 100) / 200 * 100;
 
+  // Target freq (written, no transpose) for display
   const targetWMidi = targetWrittenMidi(currentNote);
-  const targetConcertMidi = targetWMidi - 2;
-  const targetHz = Math.round((440 * Math.pow(2, (targetConcertMidi - 69) / 12)) * 10) / 10;
+  const targetHz = Math.round(midiToFreq(targetWMidi) * 10) / 10;
 
   return (
     <div>
@@ -212,16 +220,27 @@ export default function PitchCoach() {
           <span>-100¢</span><span>0¢</span><span>+100¢</span>
         </div>
         <div style={{ position:"relative", height:18, background:"#f3f4f6", borderRadius:999 }}>
-          <div style={{ position:"absolute", left:"37.5%", width:"25%", top:0, bottom:0, background:"rgba(34,197,94,0.25)", borderRadius:999 }}/>
-          <div style={{ position:"absolute", left:`calc(${pct}% - 1px)`, top:-6, bottom:-6, width:2, background:"#111827", borderRadius:2, boxShadow:"0 0 0 2px rgba(0,0,0,0.03)" }}/>
+          {/* Green zone (±25¢) */}
+          <div style={{
+            position:"absolute", left:"37.5%", width:"25%", top:0, bottom:0,
+            background:"rgba(34,197,94,0.25)", borderRadius:999
+          }}/>
+          {/* Needle */}
+          <div style={{
+            position:"absolute", left:`calc(${pct}% - 1px)`, top:-6, bottom:-6, width:2,
+            background:"#111827", borderRadius:2, boxShadow:"0 0 0 2px rgba(0,0,0,0.03)",
+            transition: "left 60ms linear"
+          }}/>
         </div>
       </div>
 
       <div style={{ textAlign:"center", fontSize:13, color:"#374151", marginTop:8 }}>
-        Target {currentNote} • Concert ≈ {targetHz} Hz &nbsp;|&nbsp; Detected {detFreq ? `${detFreq.toFixed(1)} Hz` : "—"} &nbsp;|&nbsp; Offset {liveCents>0?"+":""}{liveCents ?? 0}¢
+        Target {currentNote} • ≈ {targetHz} Hz &nbsp;|&nbsp; Detected {detFreq ? `${detFreq.toFixed(1)} Hz` : "—"} &nbsp;|&nbsp; Offset {liveCents>0?"+":""}{liveCents ?? 0}¢
       </div>
 
-      <p style={{ textAlign:"center", marginTop:10, color:"#555" }}>Centre the needle into the green band (±25¢) to be in tune.</p>
+      <p style={{ textAlign:"center", marginTop:10, color:"#555" }}>
+        Centre the needle into the green band (±25¢) to be in tune.
+      </p>
 
       <ResultPopup visible={showResult} ok={resultOK} text={resultText} />
     </div>
