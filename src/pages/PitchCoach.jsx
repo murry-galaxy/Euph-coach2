@@ -22,7 +22,7 @@ export default function PitchCoach() {
   const [listening, setListening] = useState(false);
   const [feedback, setFeedback] = useState("Press Start Listening, then centre the meter.");
 
-  const [currentNote, setCurrentNote] = useState("C4"); // written (no transposition anywhere)
+  const [currentNote, setCurrentNote] = useState("C4"); // written, NO transposition
   const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 
   // Flashcards pool: C4..B4
@@ -79,12 +79,13 @@ export default function PitchCoach() {
   const analyserRef = useRef(null);
   const bufferRef = useRef(null);
   const rafRef = useRef(null);
+  const mediaStreamRef = useRef(null);
 
   const [liveCents, setLiveCents] = useState(0);
   const [detFreq, setDetFreq] = useState(null);
+  const [micLevel, setMicLevel] = useState(0); // 0..1 for debug
 
   function midiToFreq(midi){
-    // A4=440Hz
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
   function centsFromTarget(freqDetected, targetMidi){
@@ -92,12 +93,18 @@ export default function PitchCoach() {
     return Math.round(1200 * Math.log2(freqDetected / targetFreq));
   }
 
+  // Lowered noise gate; brass can have soft onsets
+  const NOISE_GATE = 0.003; // was 0.008
+
   function autoCorrelate(buf, sr){
-    // Basic ACF; returns frequency in Hz or -1 if no stable pitch
+    // compute rms for level meter
     let SIZE = buf.length, rms = 0;
     for (let i=0;i<SIZE;i++) rms += buf[i]*buf[i];
     rms = Math.sqrt(rms/SIZE);
-    if (rms < 0.008) return -1; // too quiet / noise floor
+    setMicLevel(rms);
+
+    if (rms < NOISE_GATE) return -1;
+
     const c = new Float32Array(SIZE);
     for (let i=0;i<SIZE;i++){ let sum=0; for(let j=0;j<SIZE-i;j++){ sum += buf[j]*buf[j+i]; } c[i]=sum; }
     let d=0; while (d+1 < SIZE && c[d] > c[d+1]) d++;
@@ -107,10 +114,10 @@ export default function PitchCoach() {
     return T0 <= 0 ? -1 : sr / T0;
   }
 
-  // Parse "C#4" → written MIDI index (used as the *target* without any transposition)
+  // Parse "C#4" → written MIDI (target)
   function targetWrittenMidi(noteStr){
     const m = noteStr.match(/^([A-G](?:#|b)?)(\d)$/);
-    if (!m) return 60; // default C4
+    if (!m) return 60; // C4
     const [_, raw, octStr] = m;
     const FLAT_TO_SHARP = { Ab:"G#", Bb:"A#", Db:"C#", Eb:"D#", Gb:"F#" };
     const name = raw.includes("b") ? (FLAT_TO_SHARP[raw] || raw) : raw;
@@ -122,41 +129,87 @@ export default function PitchCoach() {
   async function startListening(){
     if (listening) return;
     try{
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:false, noiseSuppression:false }});
+      // Create/Resume audio context on user gesture
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       audioCtxRef.current = ctx;
-      const analyser = ctx.createAnalyser(); analyser.fftSize = 2048; analyserRef.current = analyser;
-      const src = ctx.createMediaStreamSource(stream); src.connect(analyser);
+
+      // Some browsers start suspended; ensure resume
+      if (ctx.state === "suspended") {
+        await ctx.resume();
+      }
+      // iOS: tie a one-time resume to the first touch just in case
+      const resumeOnce = () => ctx.resume();
+      document.body.addEventListener("touchstart", resumeOnce, { once: true });
+
+      // Get mic
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        }
+      });
+      mediaStreamRef.current = stream;
+
+      // Wire graph
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
+      analyserRef.current = analyser;
+
+      const src = ctx.createMediaStreamSource(stream);
+      src.connect(analyser);
+
       bufferRef.current = new Float32Array(analyser.fftSize);
+
       setListening(true);
       rafRef.current = requestAnimationFrame(loop);
-    }catch(e){ console.error(e); setFeedback("Microphone permission denied or unavailable."); }
+    }catch(e){
+      console.error(e);
+      setFeedback("Microphone permission denied or unavailable. Check browser/site mic settings.");
+    }
   }
+
   function stopListening(){
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     setListening(false);
+
+    // Stop audio tracks
+    try {
+      mediaStreamRef.current?.getTracks?.().forEach(t => t.stop());
+    } catch {}
+    mediaStreamRef.current = null;
+
+    // Close context
+    try {
+      audioCtxRef.current?.close?.();
+    } catch {}
+    audioCtxRef.current = null;
+    analyserRef.current = null;
+    bufferRef.current = null;
   }
 
   function loop(){
     if (!listening) return;
     const analyser = analyserRef.current, buf = bufferRef.current, ctx = audioCtxRef.current;
     if (!analyser || !buf || !ctx) return;
+
     analyser.getFloatTimeDomainData(buf);
     const freq = autoCorrelate(buf, ctx.sampleRate || 44100);
+
     if (freq > 0 && freq < 1500) {
       setDetFreq(freq);
-      const targetMidi = targetWrittenMidi(currentNote);           // NO transposition
-      const cents = centsFromTarget(freq, targetMidi);             // cents vs written target
-      setLiveCents(Math.max(-100, Math.min(100, cents)));          // clamp for display
+      const targetMidi = targetWrittenMidi(currentNote); // NO transposition
+      const cents = centsFromTarget(freq, targetMidi);
+      setLiveCents(Math.max(-100, Math.min(100, cents))); // clamp for display
+    } else {
+      // no stable pitch detected
+      setDetFreq(null);
     }
     rafRef.current = requestAnimationFrame(loop);
   }
 
-  useEffect(() => () => {
-    stopListening();
-    audioCtxRef.current?.close?.();
-  }, []);
+  useEffect(() => () => { stopListening(); }, []);
 
   // Popup state
   const [showResult, setShowResult] = useState(false);
@@ -235,11 +288,11 @@ export default function PitchCoach() {
       </div>
 
       <div style={{ textAlign:"center", fontSize:13, color:"#374151", marginTop:8 }}>
-        Target {currentNote} • ≈ {targetHz} Hz &nbsp;|&nbsp; Detected {detFreq ? `${detFreq.toFixed(1)} Hz` : "—"} &nbsp;|&nbsp; Offset {liveCents>0?"+":""}{liveCents ?? 0}¢
+        Target {currentNote} • ≈ {targetHz} Hz &nbsp;|&nbsp; Detected {detFreq ? `${detFreq.toFixed(1)} Hz` : "—"} &nbsp;|&nbsp; Offset {liveCents>0?"+":""}{liveCents ?? 0}¢ &nbsp;|&nbsp; Mic {micLevel.toFixed(3)}
       </div>
 
       <p style={{ textAlign:"center", marginTop:10, color:"#555" }}>
-        Centre the needle into the green band (±25¢) to be in tune.
+        If Mic is ~0.000–0.002 while playing, the browser isn’t receiving audio — check site mic permissions.
       </p>
 
       <ResultPopup visible={showResult} ok={resultOK} text={resultText} />
