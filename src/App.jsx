@@ -10,7 +10,7 @@ export default function App() {
         {/* Header */}
         <header style={{ marginBottom: 16 }}>
           <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Euphonium Coach</h1>
-          <div style={{ fontSize: 12, color: "#6b7280" }}>you can view it at dave.ltd</div>
+          <div style={{ fontSize: 12, color: "#6b7280" }}>Valve Flashcards and Pitch Coach</div>
         </header>
 
         {/* Nav */}
