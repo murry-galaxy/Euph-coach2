@@ -1,3 +1,4 @@
+// src/pages/PitchCoach.jsx
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import StaffNote from "../StaffNote.jsx";
 
@@ -20,7 +21,7 @@ export default function PitchCoach() {
   // UI state
   const [mode, setMode] = useState("flashcards"); // "flashcards" | "scales"
   const [listening, setListening] = useState(false);
-  const [currentNote, setCurrentNote] = useState("C4"); // WRITTEN target. NO TRANSPOSITION.
+  const [currentNote, setCurrentNote] = useState("C4"); // written, NO transposition
   const [errMsg, setErrMsg] = useState("");
 
   // Note helpers
@@ -69,7 +70,7 @@ export default function PitchCoach() {
     setCurrentNote(seq[idx]);
   }
 
-  // -------- Pitch detection (NO TRANSPOSITION) ----------
+  // -------- Audio / Pitch detection (Mobile-hardened) ----------
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const bufferRef = useRef(null);
@@ -78,25 +79,23 @@ export default function PitchCoach() {
 
   const [liveCents, setLiveCents] = useState(0);
   const [detFreq, setDetFreq] = useState(null);
-  const [micLevel, setMicLevel] = useState(0); // 0..1 RMS (debug)
+  const [micLevel, setMicLevel] = useState(0); // RMS
+  const [sensitivity, setSensitivity] = useState(0.002); // adjustable noise gate
 
   // Device selection
   const [devices, setDevices] = useState([]);
   const [deviceId, setDeviceId] = useState("");
 
   useEffect(() => {
-    // enumerate devices after any permission is granted
     (async () => {
       try {
         const list = await navigator.mediaDevices.enumerateDevices?.();
         const inputs = (list || []).filter(d => d.kind === "audioinput");
         setDevices(inputs);
         if (!deviceId && inputs[0]?.deviceId) setDeviceId(inputs[0].deviceId);
-      } catch (e) {
-        // enumeration may fail before permission
-      }
+      } catch {}
     })();
-  }, [listening]); // after start we’ll have perms, so this populates
+  }, [listening]);
 
   function midiToFreq(midi){
     return 440 * Math.pow(2, (midi - 69) / 12);
@@ -106,25 +105,69 @@ export default function PitchCoach() {
     return Math.round(1200 * Math.log2(freqDetected / targetFreq));
   }
 
-  const NOISE_GATE = 0.003; // lowered gate so brass onsets register
+  // YIN/AMDF-ish detector (robust on mobile/brass)
+  function detectPitchYIN(buf, sampleRate) {
+    const threshold = 0.15; // smaller = more sensitive
+    const yin = new Float32Array(buf.length / 2);
+    let sum, runningSum = 0;
 
-  function autoCorrelate(buf, sr){
-    // support byte or float data arrays
-    let SIZE = buf.length, rms = 0;
-    for (let i=0;i<SIZE;i++) rms += buf[i]*buf[i];
-    rms = Math.sqrt(rms/SIZE);
-    setMicLevel(rms);
+    // difference function
+    for (let tau = 1; tau < yin.length; tau++) {
+      sum = 0;
+      for (let i = 0; i < yin.length; i++) {
+        const diff = buf[i] - buf[i + tau];
+        sum += diff * diff;
+      }
+      yin[tau] = sum;
+    }
 
-    if (rms < NOISE_GATE) return -1;
+    // cumulative mean normalized difference
+    yin[0] = 1;
+    runningSum = 0;
+    for (let tau = 1; tau < yin.length; tau++) {
+      runningSum += yin[tau];
+      yin[tau] = yin[tau] * tau / runningSum;
+    }
 
-    // naive ACF
-    const c = new Float32Array(SIZE);
-    for (let i=0;i<SIZE;i++){ let sum=0; for(let j=0;j<SIZE-i;j++){ sum += buf[j]*buf[j+i]; } c[i]=sum; }
-    let d=0; while (d+1 < SIZE && c[d] > c[d+1]) d++;
-    let maxval=-1, maxpos=-1;
-    for (let i=d;i<SIZE;i++){ if (c[i] > maxval){ maxval = c[i]; maxpos = i; } }
-    const T0 = maxpos;
-    return T0 <= 0 ? -1 : sr / T0;
+    // absolute threshold
+    let tauEstimate = -1;
+    for (let tau = 2; tau < yin.length; tau++) {
+      if (yin[tau] < threshold) {
+        while (tau + 1 < yin.length && yin[tau + 1] < yin[tau]) tau++;
+        tauEstimate = tau;
+        break;
+      }
+    }
+    if (tauEstimate === -1) return -1;
+
+    // parabolic interpolation for better resolution
+    const x0 = tauEstimate < 1 ? tauEstimate : tauEstimate - 1;
+    const x2 = tauEstimate + 1 < yin.length ? tauEstimate + 1 : tauEstimate;
+    const s0 = yin[x0], s1 = yin[tauEstimate], s2 = yin[x2];
+    const betterTau = tauEstimate + (s2 - s0) / (2 * (2 * s1 - s2 - s0));
+
+    const freq = sampleRate / betterTau;
+    if (!isFinite(freq) || freq <= 0) return -1;
+    return freq;
+  }
+
+  function readBuffer(analyser, floatBuf) {
+    // Safari sometimes throws on float read; fall back to bytes
+    try {
+      analyser.getFloatTimeDomainData(floatBuf);
+      return floatBuf;
+    } catch {
+      const bytes = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(bytes);
+      for (let i = 0; i < bytes.length; i++) floatBuf[i] = (bytes[i] - 128) / 128;
+      return floatBuf;
+    }
+  }
+
+  function rmsLevel(buf) {
+    let s = 0;
+    for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
+    return Math.sqrt(s / buf.length);
   }
 
   function targetWrittenMidi(noteStr){
@@ -144,29 +187,30 @@ export default function PitchCoach() {
     try{
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) throw new Error("WebAudio not supported in this browser.");
-      const ctx = new Ctx();
+      const ctx = new Ctx({ latencyHint: "interactive" });
       audioCtxRef.current = ctx;
 
       if (ctx.state === "suspended") await ctx.resume();
       const resumeOnce = () => ctx.resume();
       document.body.addEventListener("touchstart", resumeOnce, { once: true });
 
-      // request specific device if chosen
       const constraints = {
         audio: {
           deviceId: deviceId ? { exact: deviceId } : undefined,
           echoCancellation: false,
           noiseSuppression: false,
-          autoGainControl: false
+          autoGainControl: false,
+          channelCount: 1,
+          sampleRate: 48000 // common on phones; browser may ignore but OK
         }
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       mediaStreamRef.current = stream;
 
-      // Build graph
       const analyser = ctx.createAnalyser();
-      analyser.fftSize = 2048;
+      analyser.fftSize = 4096; // larger buffer → better pitch stability
+      analyser.smoothingTimeConstant = 0.0;
       analyserRef.current = analyser;
 
       const src = ctx.createMediaStreamSource(stream);
@@ -174,7 +218,7 @@ export default function PitchCoach() {
 
       bufferRef.current = new Float32Array(analyser.fftSize);
 
-      // Populate device list after permission
+      // enumerate devices now that permission granted
       try {
         const list = await navigator.mediaDevices.enumerateDevices();
         const inputs = (list || []).filter(d => d.kind === "audioinput");
@@ -186,7 +230,7 @@ export default function PitchCoach() {
     }catch(e){
       console.error(e);
       setErrMsg((e && e.message) ? e.message : String(e));
-      alert("Microphone blocked or unavailable for this domain. Click the padlock → Site settings → Microphone → Allow, then reload.");
+      alert("Microphone blocked or unavailable for this domain. Tap the padlock → Site settings → Microphone → Allow, then reload.");
     }
   }
 
@@ -208,24 +252,25 @@ export default function PitchCoach() {
     const analyser = analyserRef.current, buf = bufferRef.current, ctx = audioCtxRef.current;
     if (!listening || !analyser || !buf || !ctx) return;
 
-    // get data (fallback if Float API is quirky)
-    try {
-      analyser.getFloatTimeDomainData(buf);
-    } catch {
-      const bytes = new Uint8Array(analyser.fftSize);
-      analyser.getByteTimeDomainData(bytes);
-      for (let i=0;i<bytes.length;i++) buf[i] = (bytes[i]-128)/128;
-    }
+    const timeData = readBuffer(analyser, buf);
+    const level = rmsLevel(timeData);
+    setMicLevel(level);
 
-    const freq = autoCorrelate(buf, ctx.sampleRate || 44100);
-    if (freq > 0 && freq < 1500) {
-      setDetFreq(freq);
-      const targetMidi = targetWrittenMidi(currentNote);
-      const cents = centsFromTarget(freq, targetMidi);
-      setLiveCents(Math.max(-100, Math.min(100, cents)));
+    if (level >= sensitivity) {
+      // YIN pitch detection (more reliable on brass)
+      const freq = detectPitchYIN(timeData, ctx.sampleRate || 44100);
+      if (freq > 0 && freq < 1500) {
+        setDetFreq(freq);
+        const targetMidi = targetWrittenMidi(currentNote);
+        const cents = centsFromTarget(freq, targetMidi);
+        setLiveCents(Math.max(-100, Math.min(100, cents)));
+      } else {
+        setDetFreq(null);
+      }
     } else {
       setDetFreq(null);
     }
+
     rafRef.current = requestAnimationFrame(loop);
   }
 
@@ -259,7 +304,7 @@ export default function PitchCoach() {
   const targetWMidi = targetWrittenMidi(currentNote);
   const targetHz = Math.round(midiToFreq(targetWMidi) * 10) / 10;
 
-  // simple test beep to verify AudioContext output path
+  // simple output test beep
   function testBeep() {
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -293,7 +338,7 @@ export default function PitchCoach() {
           ? <button onClick={nextFlashcard} style={btn}>Next Note</button>
           : <button onClick={nextScaleStep} style={btn}>Next Degree</button>}
 
-        {/* Device picker */}
+        {/* Device + sensitivity */}
         <select
           value={deviceId}
           onChange={(e)=>setDeviceId(e.target.value)}
@@ -303,6 +348,18 @@ export default function PitchCoach() {
           {devices.length === 0 ? <option>Default mic (grant permission)</option> :
             devices.map(d => <option key={d.deviceId} value={d.deviceId}>{d.label || `Mic ${d.deviceId.slice(0,6)}…`}</option>)}
         </select>
+
+        <label style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:12, color:"#555" }}>Sensitivity</span>
+          <input
+            type="range"
+            min="0.0005"
+            max="0.02"
+            step="0.0005"
+            value={sensitivity}
+            onChange={(e)=>setSensitivity(parseFloat(e.target.value))}
+          />
+        </label>
 
         <button onClick={startListening} style={btnPrimary}>{listening ? "Listening…" : "Start Listening"}</button>
         {listening && <button onClick={stopListening} style={btn}>Stop</button>}
@@ -330,7 +387,7 @@ export default function PitchCoach() {
       <div style={{ textAlign:"center", fontSize:13, color:"#374151", marginTop:8 }}>
         Target {currentNote} • ≈ {targetHz} Hz &nbsp;|&nbsp; Detected {detFreq ? `${detFreq.toFixed(1)} Hz` : "—"} &nbsp;|&nbsp; Offset {liveCents>0?"+":""}{liveCents ?? 0}¢
         <br/>
-        Mic level (RMS): {micLevel.toFixed(3)} {micLevel < 0.003 ? "— (too low / no input)" : ""}
+        Mic level (RMS): {micLevel.toFixed(3)} {micLevel < sensitivity ? "— (below gate; raise sensitivity)" : ""}
         {errMsg ? <div style={{ color:"#b91c1c", marginTop:6 }}>Error: {errMsg}</div> : null}
       </div>
     </div>
