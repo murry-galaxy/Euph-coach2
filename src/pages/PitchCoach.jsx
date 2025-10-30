@@ -1,4 +1,3 @@
-// src/pages/PitchCoach.jsx
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import StaffNote from "../StaffNote.jsx";
 
@@ -21,7 +20,8 @@ export default function PitchCoach() {
   // UI state
   const [mode, setMode] = useState("flashcards"); // "flashcards" | "scales"
   const [listening, setListening] = useState(false);
-  const [currentNote, setCurrentNote] = useState("C4"); // WRITTEN target. NO TRANSPOSITION anywhere.
+  const [currentNote, setCurrentNote] = useState("C4"); // WRITTEN target. NO TRANSPOSITION.
+  const [errMsg, setErrMsg] = useState("");
 
   // Note helpers
   const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
@@ -80,6 +80,24 @@ export default function PitchCoach() {
   const [detFreq, setDetFreq] = useState(null);
   const [micLevel, setMicLevel] = useState(0); // 0..1 RMS (debug)
 
+  // Device selection
+  const [devices, setDevices] = useState([]);
+  const [deviceId, setDeviceId] = useState("");
+
+  useEffect(() => {
+    // enumerate devices after any permission is granted
+    (async () => {
+      try {
+        const list = await navigator.mediaDevices.enumerateDevices?.();
+        const inputs = (list || []).filter(d => d.kind === "audioinput");
+        setDevices(inputs);
+        if (!deviceId && inputs[0]?.deviceId) setDeviceId(inputs[0].deviceId);
+      } catch (e) {
+        // enumeration may fail before permission
+      }
+    })();
+  }, [listening]); // after start we’ll have perms, so this populates
+
   function midiToFreq(midi){
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
@@ -88,10 +106,10 @@ export default function PitchCoach() {
     return Math.round(1200 * Math.log2(freqDetected / targetFreq));
   }
 
-  const NOISE_GATE = 0.003; // lower gate so brass onsets register
+  const NOISE_GATE = 0.003; // lowered gate so brass onsets register
 
   function autoCorrelate(buf, sr){
-    // RMS for mic level
+    // support byte or float data arrays
     let SIZE = buf.length, rms = 0;
     for (let i=0;i<SIZE;i++) rms += buf[i]*buf[i];
     rms = Math.sqrt(rms/SIZE);
@@ -99,7 +117,7 @@ export default function PitchCoach() {
 
     if (rms < NOISE_GATE) return -1;
 
-    // very simple ACF
+    // naive ACF
     const c = new Float32Array(SIZE);
     for (let i=0;i<SIZE;i++){ let sum=0; for(let j=0;j<SIZE-i;j++){ sum += buf[j]*buf[j+i]; } c[i]=sum; }
     let d=0; while (d+1 < SIZE && c[d] > c[d+1]) d++;
@@ -122,24 +140,31 @@ export default function PitchCoach() {
 
   async function startListening(){
     if (listening) return;
+    setErrMsg("");
     try{
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) throw new Error("WebAudio not supported in this browser.");
+      const ctx = new Ctx();
       audioCtxRef.current = ctx;
 
-      // Ensure resumed (policy)
       if (ctx.state === "suspended") await ctx.resume();
       const resumeOnce = () => ctx.resume();
       document.body.addEventListener("touchstart", resumeOnce, { once: true });
 
-      const stream = await navigator.mediaDevices.getUserMedia({
+      // request specific device if chosen
+      const constraints = {
         audio: {
+          deviceId: deviceId ? { exact: deviceId } : undefined,
           echoCancellation: false,
           noiseSuppression: false,
           autoGainControl: false
         }
-      });
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       mediaStreamRef.current = stream;
 
+      // Build graph
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 2048;
       analyserRef.current = analyser;
@@ -149,11 +174,19 @@ export default function PitchCoach() {
 
       bufferRef.current = new Float32Array(analyser.fftSize);
 
+      // Populate device list after permission
+      try {
+        const list = await navigator.mediaDevices.enumerateDevices();
+        const inputs = (list || []).filter(d => d.kind === "audioinput");
+        setDevices(inputs);
+      } catch {}
+
       setListening(true);
       rafRef.current = requestAnimationFrame(loop);
     }catch(e){
       console.error(e);
-      alert("Microphone blocked or unavailable. Check site permissions for mic and try again.");
+      setErrMsg((e && e.message) ? e.message : String(e));
+      alert("Microphone blocked or unavailable for this domain. Click the padlock → Site settings → Microphone → Allow, then reload.");
     }
   }
 
@@ -172,16 +205,22 @@ export default function PitchCoach() {
   }
 
   function loop(){
-    if (!listening) return;
     const analyser = analyserRef.current, buf = bufferRef.current, ctx = audioCtxRef.current;
-    if (!analyser || !buf || !ctx) return;
+    if (!listening || !analyser || !buf || !ctx) return;
 
-    analyser.getFloatTimeDomainData(buf);
+    // get data (fallback if Float API is quirky)
+    try {
+      analyser.getFloatTimeDomainData(buf);
+    } catch {
+      const bytes = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(bytes);
+      for (let i=0;i<bytes.length;i++) buf[i] = (bytes[i]-128)/128;
+    }
+
     const freq = autoCorrelate(buf, ctx.sampleRate || 44100);
-
     if (freq > 0 && freq < 1500) {
       setDetFreq(freq);
-      const targetMidi = targetWrittenMidi(currentNote); // NO transposition
+      const targetMidi = targetWrittenMidi(currentNote);
       const cents = centsFromTarget(freq, targetMidi);
       setLiveCents(Math.max(-100, Math.min(100, cents)));
     } else {
@@ -220,10 +259,26 @@ export default function PitchCoach() {
   const targetWMidi = targetWrittenMidi(currentNote);
   const targetHz = Math.round(midiToFreq(targetWMidi) * 10) / 10;
 
+  // simple test beep to verify AudioContext output path
+  function testBeep() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new Ctx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      gain.gain.value = 0.07;
+      osc.frequency.value = 440;
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      setTimeout(() => { osc.stop(); ctx.close(); }, 500);
+    } catch {}
+  }
+
   return (
     <div>
       <h2 style={{ fontSize:18, fontWeight:700, marginBottom:8 }}>Pitch Coach</h2>
 
+      {/* Controls */}
       <div style={WRAP}>
         <Segmented value={mode} onChange={setMode} options={[{label:"Flashcards", value:"flashcards"},{label:"Scales", value:"scales"}]} />
         {mode==="scales" && (
@@ -237,9 +292,22 @@ export default function PitchCoach() {
         {mode==="flashcards"
           ? <button onClick={nextFlashcard} style={btn}>Next Note</button>
           : <button onClick={nextScaleStep} style={btn}>Next Degree</button>}
+
+        {/* Device picker */}
+        <select
+          value={deviceId}
+          onChange={(e)=>setDeviceId(e.target.value)}
+          style={{ ...btn, minWidth:220 }}
+          title="Input device"
+        >
+          {devices.length === 0 ? <option>Default mic (grant permission)</option> :
+            devices.map(d => <option key={d.deviceId} value={d.deviceId}>{d.label || `Mic ${d.deviceId.slice(0,6)}…`}</option>)}
+        </select>
+
         <button onClick={startListening} style={btnPrimary}>{listening ? "Listening…" : "Start Listening"}</button>
         {listening && <button onClick={stopListening} style={btn}>Stop</button>}
         <button onClick={submitAttempt} style={btnSuccess}>Submit</button>
+        <button onClick={testBeep} style={btn}>Test Beep</button>
       </div>
 
       {/* Target staff */}
@@ -258,11 +326,13 @@ export default function PitchCoach() {
         </div>
       </div>
 
+      {/* Diagnostics / readout */}
       <div style={{ textAlign:"center", fontSize:13, color:"#374151", marginTop:8 }}>
-        Target {currentNote} • ≈ {targetHz} Hz &nbsp;|&nbsp; Detected {detFreq ? `${detFreq.toFixed(1)} Hz` : "—"} &nbsp;|&nbsp; Offset {liveCents>0?"+":""}{liveCents ?? 0}¢ &nbsp;|&nbsp; Mic {micLevel.toFixed(3)}
+        Target {currentNote} • ≈ {targetHz} Hz &nbsp;|&nbsp; Detected {detFreq ? `${detFreq.toFixed(1)} Hz` : "—"} &nbsp;|&nbsp; Offset {liveCents>0?"+":""}{liveCents ?? 0}¢
+        <br/>
+        Mic level (RMS): {micLevel.toFixed(3)} {micLevel < 0.003 ? "— (too low / no input)" : ""}
+        {errMsg ? <div style={{ color:"#b91c1c", marginTop:6 }}>Error: {errMsg}</div> : null}
       </div>
-
-      <ResultPopup visible={showResult} ok={resultOK} text={resultText} />
     </div>
   );
 }
