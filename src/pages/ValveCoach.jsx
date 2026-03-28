@@ -178,6 +178,10 @@ export default function ValveCoach() {
     const { state, msg } = calcFeedback(nv);
     setFeedback(state);
     setFeedbackMsg(msg);
+    // Auto-advance immediately when correct
+    if (state === "correct") {
+      setTimeout(() => autoSubmit(nv), 300);
+    }
   }
 
   function pressOpen() {
@@ -185,6 +189,27 @@ export default function ValveCoach() {
     const { state, msg } = calcFeedback("");
     setFeedback(state);
     setFeedbackMsg(msg);
+    if (state === "correct") {
+      setTimeout(() => autoSubmit(""), 300);
+    }
+  }
+
+  function autoSubmit(nv) {
+    const norm = normalizeInput(nv);
+    const ok = expectedValves(currentNote).includes(norm);
+    setResultOK(ok);
+    setResultText(ok ? "Correct!" : `Expected ${expected}`);
+    setShowResult(true);
+    if (popupTimer.current) clearTimeout(popupTimer.current);
+    popupTimer.current = setTimeout(() => setShowResult(false), 600);
+    if (ok) {
+      const ns = streak + 1;
+      setStreak(ns);
+      setBestStreak(b => Math.max(b, ns));
+    } else {
+      setStreak(0);
+    }
+    mode === "flashcards" ? nextFlashcard() : nextScaleStep();
   }
 
   function nextFlashcard() {
