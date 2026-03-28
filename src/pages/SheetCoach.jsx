@@ -512,9 +512,40 @@ export default function SheetCoach() {
             </div>
             {imagePreview && (
               <img src={imagePreview} alt="Sheet music"
-                style={{ width:"100%", borderRadius:8, marginBottom:12, maxHeight:200, objectFit:"contain" }} />
+                style={{ width:"100%", borderRadius:8, marginBottom:12, maxHeight:220, objectFit:"contain" }} />
             )}
             <MiniStaff notes={notes} currentIdx={-1} results={[]} />
+          </div>
+
+          {/* Note verification — check before practising */}
+          <div style={{ ...card }}>
+            <div style={{ fontSize:13, fontWeight:600, marginBottom:4 }}>Check the notes look right</div>
+            <div style={{ fontSize:12, color:"#6b7280", marginBottom:12 }}>
+              Compare these against your sheet. Tap any wrong note to remove it.
+            </div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+              {notes.map((n, i) => (
+                <button key={i} onClick={() => {
+                  const updated = notes.filter((_, j) => j !== i);
+                  setMelody({ ...melody, notes: updated });
+                  notesRef.current = updated;
+                }} style={{
+                  padding:"5px 10px", borderRadius:8, fontSize:13, fontWeight:600,
+                  background:"#f3f4f6", color:"#111827",
+                  border:"1px solid #e5e7eb", cursor:"pointer",
+                }}>
+                  {n.note}
+                  <span style={{ fontSize:10, color:"#9ca3af", marginLeft:4 }}>
+                    {n.dur === 4 ? "w" : n.dur === 2 ? "h" : n.dur === 1 ? "q" : "e"}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {notes.length === 0 && (
+              <div style={{ fontSize:12, color:"#dc2626", marginTop:8 }}>
+                All notes removed — please re-upload.
+              </div>
+            )}
           </div>
 
           {/* Tempo + playback */}
