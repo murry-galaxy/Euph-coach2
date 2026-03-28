@@ -279,7 +279,7 @@ export default function ValveCoach() {
   // ── Styles ─────────────────────────────────────────────
   const card = {
     background:"white", border:"1px solid #e5e7eb",
-    borderRadius:16, padding:20, marginBottom:14,
+    borderRadius:12, padding:12, marginBottom:8,
   };
 
   const segBtn = (active) => ({
@@ -292,24 +292,24 @@ export default function ValveCoach() {
   // ── Render ─────────────────────────────────────────────
   return (
     <div style={{ maxWidth:480, margin:"0 auto" }}>
-      <h2 style={{ fontSize:18, fontWeight:700, marginBottom:4 }}>Valve Coach</h2>
+      <h2 style={{ fontSize:16, fontWeight:700, marginBottom:4 }}>Valve Coach</h2>
 
       {/* ── Streak bar ── */}
-      <div style={{ display:"flex", gap:12, marginBottom:14 }}>
-        <div style={{ ...card, padding:"10px 16px", marginBottom:0, flex:1, textAlign:"center" }}>
-          <div style={{ fontSize:11, color:"#9ca3af", marginBottom:2 }}>Streak</div>
-          <div style={{ fontSize:26, fontWeight:800, color: streak > 0 ? "#f59e0b" : "#d1d5db" }}>
+      <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+        <div style={{ ...card, padding:"6px 12px", marginBottom:0, flex:1, textAlign:"center" }}>
+          <div style={{ fontSize:11, color:"#9ca3af", marginBottom:1 }}>Streak</div>
+          <div style={{ fontSize:22, fontWeight:800, color: streak > 0 ? "#f59e0b" : "#d1d5db" }}>
             {streak > 0 ? `🔥 ${streak}` : "0"}
           </div>
         </div>
-        <div style={{ ...card, padding:"10px 16px", marginBottom:0, flex:1, textAlign:"center" }}>
-          <div style={{ fontSize:11, color:"#9ca3af", marginBottom:2 }}>Best</div>
-          <div style={{ fontSize:26, fontWeight:800, color:"#6b7280" }}>{bestStreak}</div>
+        <div style={{ ...card, padding:"6px 12px", marginBottom:0, flex:1, textAlign:"center" }}>
+          <div style={{ fontSize:11, color:"#9ca3af", marginBottom:1 }}>Best</div>
+          <div style={{ fontSize:22, fontWeight:800, color:"#6b7280" }}>{bestStreak}</div>
         </div>
       </div>
 
       {/* ── Mode + scale selector ── */}
-      <div style={{ ...card, padding:"12px 16px" }}>
+      <div style={{ ...card, padding:"8px 12px" }}>
         <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
           <div style={{ display:"inline-flex", border:"1px solid #e5e7eb", borderRadius:10, overflow:"hidden" }}>
             <button style={segBtn(mode==="flashcards")} onClick={() => setMode("flashcards")}>Flashcards</button>
@@ -329,7 +329,7 @@ export default function ValveCoach() {
 
       {/* ── Staff + note display ── */}
       <div style={{ ...card, textAlign:"center" }}>
-        <div style={{ display:"flex", justifyContent:"center", overflow:"hidden" }}>
+        <div style={{ display:"flex", justifyContent:"center", overflow:"hidden", marginBottom:-4 }}>
           <StaffNote note={currentNote} ok={feedback === "correct" ? true : feedback === "wrong" ? false : undefined} />
         </div>
 
@@ -337,7 +337,7 @@ export default function ValveCoach() {
 
       {/* ── Valve diagram ── */}
       <div style={{ ...card, textAlign:"center" }}>
-        <div style={{ fontSize:11, color:"#9ca3af", marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>
+        <div style={{ fontSize:11, color:"#9ca3af", marginBottom:6, textTransform:"uppercase", letterSpacing:1 }}>
           Valve positions
         </div>
         <ValveDiagram pressed={displayValves} />
@@ -348,15 +348,15 @@ export default function ValveCoach() {
 
       {/* ── Valve pad ── */}
       <div style={{ ...card }}>
-        <div style={{ fontSize:11, color:"#9ca3af", marginBottom:12, textTransform:"uppercase", letterSpacing:1, textAlign:"center" }}>
+        <div style={{ fontSize:11, color:"#9ca3af", marginBottom:8, textTransform:"uppercase", letterSpacing:1, textAlign:"center" }}>
           Press valves · keyboard: 1 2 3 0 · Enter to submit
         </div>
-        <div style={{ display:"flex", justifyContent:"center", gap:14, marginBottom:0 }}>
+        <div style={{ display:"flex", justifyContent:"center", gap:10, marginBottom:0 }}>
           {["1","2","3"].map(v => {
             const active = valveInput.includes(v);
             return (
               <button key={v} onClick={() => pressValve(v)} style={{
-                width:72, height:72, borderRadius:"50%",
+                width:60, height:60, borderRadius:"50%",
                 fontSize:24, fontWeight:800,
                 background: active
                   ? "linear-gradient(180deg,#3b82f6,#2563eb)"
@@ -375,7 +375,7 @@ export default function ValveCoach() {
             );
           })}
           <button onClick={pressOpen} style={{
-            width:88, height:72, borderRadius:36,
+            width:76, height:60, borderRadius:30,
             fontSize:13, fontWeight:700,
             background: !valveInput
               ? "linear-gradient(180deg,#0ea5e9,#0284c7)"
@@ -402,7 +402,7 @@ export default function ValveCoach() {
         color: feedbackColor,
         fontSize:14, fontWeight:600,
         textAlign:"center",
-        marginBottom:14,
+        marginBottom:8,
         transition:"all 0.2s",
         minHeight:44,
         display:"flex", alignItems:"center", justifyContent:"center",
@@ -413,7 +413,7 @@ export default function ValveCoach() {
       {/* ── Submit + Next ── */}
       <div style={{ display:"flex", gap:10 }}>
         <button onClick={submitAttempt} style={{
-          flex:1, padding:"14px 0", borderRadius:12, border:"none",
+          flex:1, padding:"10px 0", borderRadius:10, border:"none",
           background:"linear-gradient(180deg,#16a34a,#15803d)",
           color:"white", fontSize:16, fontWeight:700, cursor:"pointer",
           boxShadow:"0 4px 12px rgba(22,163,74,0.3)",
@@ -423,7 +423,7 @@ export default function ValveCoach() {
         <button
           onClick={mode === "flashcards" ? nextFlashcard : nextScaleStep}
           style={{
-            padding:"14px 20px", borderRadius:12,
+            padding:"10px 16px", borderRadius:10,
             border:"1px solid #e5e7eb", background:"white",
             color:"#374151", fontSize:14, fontWeight:600, cursor:"pointer",
           }}
