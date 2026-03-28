@@ -347,7 +347,7 @@ export default function ScoreCoach() {
   notesRef.current = notes;
 
   const HOLD_REQUIRED = 24; // ~0.4s at 60fps
-  const CENTS_TOL = 30;
+  const CENTS_TOL = 50;
 
   const startLoop = useCallback((analyser, sampleRate) => {
     const buf = new Float32Array(analyser.fftSize);
@@ -365,7 +365,7 @@ export default function ScoreCoach() {
         const targetMidi = writtenToConcert(note.note);
         const cents = freqToCents(freq, targetMidi);
         // Accept if within 1 semitone and within cents tolerance
-        const inTune = Math.abs(detMidi - targetMidi) <= 1 && Math.abs(cents) <= CENTS_TOL;
+        const inTune = Math.abs(detMidi - targetMidi) <= 1;
 
         // Show detected note as written
         const writtenMidi = detMidi + 14;
