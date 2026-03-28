@@ -332,10 +332,7 @@ export default function ValveCoach() {
         <div style={{ display:"flex", justifyContent:"center", overflow:"hidden" }}>
           <StaffNote note={currentNote} ok={feedback === "correct" ? true : feedback === "wrong" ? false : undefined} />
         </div>
-        <div style={{ fontSize:13, color:"#6b7280", marginTop:-4 }}>
-          <strong style={{ color:"#111827", fontSize:16 }}>{currentNote}</strong>
-          {" "}· expected valves: <strong>{expected}</strong>
-        </div>
+
       </div>
 
       {/* ── Valve diagram ── */}
