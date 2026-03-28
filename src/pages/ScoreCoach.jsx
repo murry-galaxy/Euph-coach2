@@ -13,7 +13,7 @@ function midiFromWritten(noteStr) {
 }
 
 function writtenToConcert(noteStr) {
-  return midiFromWritten(noteStr) - 2;
+  return midiFromWritten(noteStr) - 14;
 }
 
 function freqToMidi(freq) {
@@ -368,7 +368,7 @@ export default function ScoreCoach() {
         const inTune = Math.abs(detMidi - targetMidi) <= 1 && Math.abs(cents) <= CENTS_TOL;
 
         // Show detected note as written
-        const writtenMidi = detMidi + 2;
+        const writtenMidi = detMidi + 14;
         const name = NOTE_NAMES[(writtenMidi % 12 + 12) % 12];
         const oct = Math.floor(writtenMidi / 12) - 1;
         setDetectedNote(name + oct);
