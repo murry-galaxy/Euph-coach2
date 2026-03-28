@@ -89,7 +89,7 @@ Format:
 
 Important: Include ALL notes from the entire page including repeats if written out.`;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const response = await fetch("https://euph-coach-api.david-murat.workers.dev/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
