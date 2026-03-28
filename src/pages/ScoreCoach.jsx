@@ -60,89 +60,88 @@ function autoCorrelate(buffer, sampleRate) {
 const MELODIES = [
   {
     // When the Saints Go Marching In
-    // Source: uploaded sheet music, Andy Norman arr., 3rd Bb part
-    // Key of Bb (2 flats), 4/4 treble clef
-    // Every note verified against handwritten valve fingerings on the score
+    // Andy Norman arr., 3rd Bb part, key of Bb (2 flats), 4/4 treble clef
+    // First line confirmed by player: C4 C4 C4 C4 C4 D4 D4 C4 D4 F4 E4
     title: "When the Saints Go Marching In",
     notes: [
-      // Bar 1 pickup: C D F
-      {note:"C4",dur:1},{note:"D4",dur:1},{note:"F4",dur:2},
-      // Bar 2: F. D
-      {note:"F4",dur:2},{note:"D4",dur:1},
-      // Bar 3: C Bb G
-      {note:"C4",dur:1},{note:"Bb3",dur:2},{note:"G3",dur:2},
-      // Bar 4: A Bb
-      {note:"A3",dur:2},{note:"Bb3",dur:2},
-      // Bar 5: Bb whole
-      {note:"Bb3",dur:4},
-      // Bar 6: G F Eb F
-      {note:"G4",dur:1},{note:"F4",dur:1},{note:"Eb4",dur:1},{note:"F4",dur:1},
-      // Bar 7: G A Bb
-      {note:"G4",dur:1},{note:"A4",dur:1},{note:"Bb4",dur:1},
-      // Bar 8: A Bb
-      {note:"A4",dur:2},{note:"Bb4",dur:2},
-      // Bar 9: Bb whole (A section)
-      {note:"Bb4",dur:4},
-      // Bar 10: G F Eb F
-      {note:"G4",dur:1},{note:"F4",dur:1},{note:"Eb4",dur:1},{note:"F4",dur:1},
-      // Bar 11: G A Bb
-      {note:"G4",dur:1},{note:"A4",dur:1},{note:"Bb4",dur:1},
-      // Bar 12: A Bb
-      {note:"A4",dur:2},{note:"Bb4",dur:2},
-      // Bar 13: Bb Bb
+      // Bar 1: C(q) C(q) C(q) D(q)  "Oh when the saints"
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      // Bar 2: C(h) D(q) F(q)  "go marching"
+      {note:"C4",dur:2},{note:"D4",dur:1},{note:"F4",dur:1},
+      // Bar 3: F.(dh) E(q)  "in"
+      {note:"F4",dur:2},{note:"F4",dur:1},{note:"E4",dur:1},
+      // Bar 4: D(w)  "oh"
+      {note:"D4",dur:4},
+      // Bar 5: rest(h) C(q) D(q)  pickup to next phrase
+      {note:"R",dur:2},{note:"C4",dur:1},{note:"D4",dur:1},
+      // Bar 6 A section: C(q) C(q) C(q) D(q)  "oh when the saints"
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      // Bar 7: C(h) D(q) F(q)
+      {note:"C4",dur:2},{note:"D4",dur:1},{note:"F4",dur:1},
+      // Bar 8: F(h) rest(h)
+      {note:"F4",dur:2},{note:"R",dur:2},
+      // Bar 9: rest(h) A4(h)
+      {note:"R",dur:2},{note:"A4",dur:2},
+      // Bar 10: Bb4(h) rest(h)
+      {note:"Bb4",dur:2},{note:"R",dur:2},
+      // Bar 11: rest(h) A4(h)
+      {note:"R",dur:2},{note:"A4",dur:2},
+      // Bar 12: Bb4(h) rest(h)
+      {note:"Bb4",dur:2},{note:"R",dur:2},
+      // Bar 13: Bb4(h) Bb4(h)
       {note:"Bb4",dur:2},{note:"Bb4",dur:2},
-      // Bar 14: Bb A
+      // Bar 14: Bb4(h) A4(h)
       {note:"Bb4",dur:2},{note:"A4",dur:2},
-      // Bar 15: G A
+      // Bar 15: G4(h) A4(h)
       {note:"G4",dur:2},{note:"A4",dur:2},
-      // Bar 16: Bb whole
-      {note:"Bb4",dur:4},
-      // Bar 17: rest + A half
-      {note:"A4",dur:2},
-      // Bar 18: Eb F
+      // Bar 16: rest(h) A4(h)  chromatic section
+      {note:"R",dur:2},{note:"A4",dur:2},
+      // Bar 17: Eb4(h) F4(h)
       {note:"Eb4",dur:2},{note:"F4",dur:2},
-      // Bar 19: G Ab
+      // Bar 18: G4(h) Ab4(h)
       {note:"G4",dur:2},{note:"Ab4",dur:2},
-      // Bar 20: G F Eb
-      {note:"G4",dur:1},{note:"F4",dur:1},{note:"Eb4",dur:1},
-      // Bar 21: Db half
-      {note:"Db4",dur:2},
-      // Bar 22: Eb E
+      // Bar 19: G4 F4 Eb4 quarters
+      {note:"G4",dur:1},{note:"F4",dur:1},{note:"Eb4",dur:1},{note:"R",dur:1},
+      // Bar 20: Db4(h) rest(h)
+      {note:"Db4",dur:2},{note:"R",dur:2},
+      // Bar 21: Eb4(h) E4(h) natural
       {note:"Eb4",dur:2},{note:"E4",dur:2},
-      // Bar 23: G F
+      // Bar 22: G4(h) F4(h)
       {note:"G4",dur:2},{note:"F4",dur:2},
-      // Bar 24: Eb D
+      // Bar 23: Eb4(h) D4(h)
       {note:"Eb4",dur:2},{note:"D4",dur:2},
-      // Bar 25 B section: A half
-      {note:"A4",dur:2},
-      // Bar 26: Bb half
-      {note:"Bb4",dur:2},
-      // Bar 27: A half
-      {note:"A4",dur:2},
-      // Bar 28: Bb half
-      {note:"Bb4",dur:2},
-      // Bar 29: G G G quarters
-      {note:"G4",dur:1},{note:"G4",dur:1},{note:"G4",dur:1},
-      // Bar 30: Bb half
-      {note:"Bb4",dur:2},
-      // Bar 31: C C
-      {note:"C4",dur:1},{note:"C4",dur:1},
-      // Bar 32: C Db D chromatic
-      {note:"C4",dur:1},{note:"Db4",dur:1},{note:"D4",dur:1},
-      // Bar 33: C C
-      {note:"C4",dur:1},{note:"C4",dur:1},
-      // Bar 34: A Bb
-      {note:"A4",dur:1},{note:"Bb4",dur:1},
-      // Bar 35: Ab half, G whole
+      // Bar 24: C4(h) rest(h)
+      {note:"C4",dur:2},{note:"R",dur:2},
+      // Bar 25 B section: A4(h) rest(h)
+      {note:"A4",dur:2},{note:"R",dur:2},
+      // Bar 26: Bb4(h) rest(h)
+      {note:"Bb4",dur:2},{note:"R",dur:2},
+      // Bar 27: A4(h) rest(h)
+      {note:"A4",dur:2},{note:"R",dur:2},
+      // Bar 28: Bb4(h) rest(h)
+      {note:"Bb4",dur:2},{note:"R",dur:2},
+      // Bar 29: G4 G4 G4 quarters rest
+      {note:"G4",dur:1},{note:"G4",dur:1},{note:"G4",dur:1},{note:"R",dur:1},
+      // Bar 30: Bb4(h) rest(h)
+      {note:"Bb4",dur:2},{note:"R",dur:2},
+      // Bar 31: C4 C4 quarters rest rest
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"R",dur:2},
+      // Bar 32: C4 Db4 D4 quarters rest
+      {note:"C4",dur:1},{note:"Db4",dur:1},{note:"D4",dur:1},{note:"R",dur:1},
+      // Bar 33: C4 C4 quarters rest rest
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"R",dur:2},
+      // Bar 34: A4 Bb4 quarters rest rest
+      {note:"A4",dur:1},{note:"Bb4",dur:1},{note:"R",dur:2},
+      // Bar 35: Ab4(h) G4(w)
       {note:"Ab4",dur:2},{note:"G4",dur:4},
-      // Bar 36: Db C Db
-      {note:"Db4",dur:1},{note:"C4",dur:1},{note:"Db4",dur:1},
-      // Bar 37: G F Eb D
+      // Bar 36: Db4 C4 Db4 quarters rest
+      {note:"Db4",dur:1},{note:"C4",dur:1},{note:"Db4",dur:1},{note:"R",dur:1},
+      // Bar 37: G4 F4 Eb4 D4 quarters
       {note:"G4",dur:1},{note:"F4",dur:1},{note:"Eb4",dur:1},{note:"D4",dur:1},
-      // Bar 38: Bb half
-      {note:"Bb4",dur:2},
+      // Bar 38: Bb3(h) rest — final bar
+      {note:"Bb3",dur:2},{note:"R",dur:2},
     ],
-  },
+  },  },
   {
     title: "Ode to Joy",
     notes: [
