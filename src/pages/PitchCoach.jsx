@@ -4,8 +4,8 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 
 const WRITTEN_NOTES = [
+  "C3","D3","E3","F3","G3","A3","B3",
   "C4","D4","E4","F4","G4","A4","B4",
-  "C5","D5","E5","F5","G5","A5","B5",
 ];
 
 // Bb treble: written midi − 2 = concert midi
@@ -17,7 +17,7 @@ function writtenToConcertMidi(noteStr) {
   const FLAT = { Ab:"G#", Bb:"A#", Db:"C#", Eb:"D#", Gb:"F#" };
   if (name.includes("b")) name = FLAT[name] || name;
   const idx = NOTE_NAMES.indexOf(name);
-  return (oct + 1) * 12 + idx - 2;
+  return (oct + 1) * 12 + idx - 14;
 }
 
 function midiToFreq(midi) {
@@ -34,7 +34,7 @@ function freqToMidiAndCents(freq) {
 
 // Concert midi → written note string (add 2 semitones for Bb treble)
 function concertMidiToWritten(midi) {
-  const writtenMidi = midi + 2;
+  const writtenMidi = midi + 14;
   const name = NOTE_NAMES[(writtenMidi % 12 + 12) % 12];
   const oct = Math.floor(writtenMidi / 12) - 1;
   return `${name}${oct}`;
@@ -155,7 +155,7 @@ export default function PitchCoach() {
   const [cents, setCents]           = useState(0);
 
   // Target mode state
-  const [targetNote, setTargetNote]   = useState("G4");
+  const [targetNote, setTargetNote]   = useState("G3");
   const [matchCount, setMatchCount]   = useState(0);
   const [successFlash, setSuccessFlash] = useState(false);
 
@@ -399,5 +399,3 @@ export default function PitchCoach() {
     </div>
   );
 }
-
-
