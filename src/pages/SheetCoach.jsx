@@ -109,9 +109,18 @@ async function transcribeSheetMusic(base64Image, mediaType) {
 
   if (!response.ok) throw new Error("API error " + response.status);
   const data = await response.json();
+
+  // Handle API-level errors (bad key, quota, etc)
+  if (data.error) throw new Error("API error: " + (data.error.message || JSON.stringify(data.error)));
+  if (!data.content) throw new Error("Invalid API response. Please check your API key is active.");
+
   const text = data.content.find(b => b.type === "text")?.text || "";
+  if (!text) throw new Error("No text returned from API.");
+
   const clean = text.replace(/```json|```/g, "").trim();
-  const parsed = JSON.parse(clean);
+  let parsed;
+  try { parsed = JSON.parse(clean); }
+  catch(e) { throw new Error("Could not parse transcription. Try a clearer photo."); }
   if (!parsed.notes || parsed.notes.length === 0) throw new Error("No notes found in image.");
   return parsed;
 }
@@ -259,6 +268,26 @@ export default function SheetCoach() {
   const HOLD_REQUIRED = 24;
 
   // ---- Upload -----------------------------------------------------------------
+  // Resize image to max 1600px on longest side before sending to API
+  async function resizeImage(file, maxSize = 1600) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.85).split(",")[1]);
+      };
+      img.src = url;
+    });
+  }
+
   async function handleUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -268,13 +297,9 @@ export default function SheetCoach() {
     setStage("transcribing");
     setError(null);
     try {
-      const base64 = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(r.result.split(",")[1]);
-        r.onerror = rej;
-        r.readAsDataURL(file);
-      });
-      const result = await transcribeSheetMusic(base64, file.type || "image/jpeg");
+      // Resize to max 1600px to keep within API limits
+      const base64 = await resizeImage(file, 1600);
+      const result = await transcribeSheetMusic(base64, "image/jpeg");
       setMelody(result);
       notesRef.current = result.notes;
       setStage("review");
