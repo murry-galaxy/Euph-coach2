@@ -61,84 +61,87 @@ const MELODIES = [
   {
     // When the Saints Go Marching In
     // Andy Norman arr., 3rd Bb part, key of Bb (2 flats), 4/4 treble clef
-    // First line confirmed by player: C4 C4 C4 C4 C4 D4 D4 C4 D4 F4 E4
+    // Line 1 confirmed by player: C4 C4 C4 C4 C4 D4 D4 C4 D4 F4 E4
+    // Fingerings on score used to verify: 0=C/G, 13=D/G, 1=F/Bb, 12=A/E, 23=Eb/Ab
     title: "When the Saints Go Marching In",
     notes: [
-      // Bar 1: C(q) C(q) C(q) D(q)  "Oh when the saints"
-      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
-      // Bar 2: C(h) D(q) F(q)  "go marching"
-      {note:"C4",dur:2},{note:"D4",dur:1},{note:"F4",dur:1},
-      // Bar 3: F.(dh) E(q)  "in"
+      // Bar 1: C(q) C(q) C(q) C(q)
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},
+      // Bar 2: C(h) D(q) D(q)
+      {note:"C4",dur:2},{note:"D4",dur:1},{note:"D4",dur:1},
+      // Bar 3: C(h) D(h) — fingering 13 confirms D
+      {note:"C4",dur:2},{note:"D4",dur:2},
+      // Bar 4: F(dotted h) E(q)  — fingering 1 then 12
       {note:"F4",dur:2},{note:"F4",dur:1},{note:"E4",dur:1},
-      // Bar 4: D(w)  "oh"
+      // Bar 5: D(w) — fingering 13
       {note:"D4",dur:4},
-      // Bar 5: rest(h) C(q) D(q)  pickup to next phrase
-      {note:"R",dur:2},{note:"C4",dur:1},{note:"D4",dur:1},
-      // Bar 6 A section: C(q) C(q) C(q) D(q)  "oh when the saints"
-      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
-      // Bar 7: C(h) D(q) F(q)
-      {note:"C4",dur:2},{note:"D4",dur:1},{note:"F4",dur:1},
-      // Bar 8: F(h) rest(h)
+      // Bar 6 A section: C(q) C(q) C(q) C(q) — repeat of opening
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},
+      // Bar 7: C(h) D(q) D(q)
+      {note:"C4",dur:2},{note:"D4",dur:1},{note:"D4",dur:1},
+      // Bar 8: C(h) D(h)
+      {note:"C4",dur:2},{note:"D4",dur:2},
+      // Bar 9: F(h) rest(h)  — fingering 1
       {note:"F4",dur:2},{note:"R",dur:2},
-      // Bar 9: rest(h) A4(h)
+      // Bar 10: rest(h) A4(h)  — fingering 12
       {note:"R",dur:2},{note:"A4",dur:2},
-      // Bar 10: Bb4(h) rest(h)
+      // Bar 11: Bb4(h) rest(h)  — fingering 1
       {note:"Bb4",dur:2},{note:"R",dur:2},
-      // Bar 11: rest(h) A4(h)
+      // Bar 12: rest(h) A4(h)  — fingering 12
       {note:"R",dur:2},{note:"A4",dur:2},
-      // Bar 12: Bb4(h) rest(h)
+      // Bar 13: Bb4(h) rest(h)
       {note:"Bb4",dur:2},{note:"R",dur:2},
-      // Bar 13: Bb4(h) Bb4(h)
+      // Bar 14: Bb4(h) Bb4(h)
       {note:"Bb4",dur:2},{note:"Bb4",dur:2},
-      // Bar 14: Bb4(h) A4(h)
+      // Bar 15: Bb4(h) A4(h)
       {note:"Bb4",dur:2},{note:"A4",dur:2},
-      // Bar 15: G4(h) A4(h)
+      // Bar 16: G4(h) A4(h)  — fingering 13 12
       {note:"G4",dur:2},{note:"A4",dur:2},
-      // Bar 16: rest(h) A4(h)  chromatic section
+      // Bar 17: rest(h) A4(h)  — chromatic section, fingering 12
       {note:"R",dur:2},{note:"A4",dur:2},
-      // Bar 17: Eb4(h) F4(h)
+      // Bar 18: Eb4(h) F4(h)  — fingering 23
       {note:"Eb4",dur:2},{note:"F4",dur:2},
-      // Bar 18: G4(h) Ab4(h)
+      // Bar 19: G4(h) Ab4(h)  — fingering 13 23
       {note:"G4",dur:2},{note:"Ab4",dur:2},
-      // Bar 19: G4 F4 Eb4 quarters
+      // Bar 20: G4(q) F4(q) Eb4(q) rest  — fingering 13 13 13
       {note:"G4",dur:1},{note:"F4",dur:1},{note:"Eb4",dur:1},{note:"R",dur:1},
-      // Bar 20: Db4(h) rest(h)
+      // Bar 21: Db4(h) rest  — fingering 123
       {note:"Db4",dur:2},{note:"R",dur:2},
-      // Bar 21: Eb4(h) E4(h) natural
+      // Bar 22: Eb4(h) E4(h)  — fingering 23 12
       {note:"Eb4",dur:2},{note:"E4",dur:2},
-      // Bar 22: G4(h) F4(h)
+      // Bar 23: G4(h) F4(h)  — fingering 13 12
       {note:"G4",dur:2},{note:"F4",dur:2},
-      // Bar 23: Eb4(h) D4(h)
+      // Bar 24: Eb4(h) D4(h)  — fingering 1 12
       {note:"Eb4",dur:2},{note:"D4",dur:2},
-      // Bar 24: C4(h) rest(h)
+      // Bar 25 B section: C4(h) rest  — fingering 1 (Bb?) or 0 (C)
       {note:"C4",dur:2},{note:"R",dur:2},
-      // Bar 25 B section: A4(h) rest(h)
+      // Bar 26: A4(h) rest  — fingering 12
       {note:"A4",dur:2},{note:"R",dur:2},
-      // Bar 26: Bb4(h) rest(h)
+      // Bar 27: Bb4(h) rest  — fingering 1
       {note:"Bb4",dur:2},{note:"R",dur:2},
-      // Bar 27: A4(h) rest(h)
+      // Bar 28: A4(h) rest  — fingering 12
       {note:"A4",dur:2},{note:"R",dur:2},
-      // Bar 28: Bb4(h) rest(h)
+      // Bar 29: Bb4(h) rest  — fingering 1
       {note:"Bb4",dur:2},{note:"R",dur:2},
-      // Bar 29: G4 G4 G4 quarters rest
+      // Bar 30: G4(q) G4(q) G4(q) rest  — fingering 13 13 13
       {note:"G4",dur:1},{note:"G4",dur:1},{note:"G4",dur:1},{note:"R",dur:1},
-      // Bar 30: Bb4(h) rest(h)
+      // Bar 31: Bb4(h) rest  — fingering 1
       {note:"Bb4",dur:2},{note:"R",dur:2},
-      // Bar 31: C4 C4 quarters rest rest
+      // Bar 32: C4(q) C4(q) rest rest  — fingering 0 0
       {note:"C4",dur:1},{note:"C4",dur:1},{note:"R",dur:2},
-      // Bar 32: C4 Db4 D4 quarters rest
+      // Bar 33: C4(q) Db4(q) D4(q) rest  — fingering 0 123 13
       {note:"C4",dur:1},{note:"Db4",dur:1},{note:"D4",dur:1},{note:"R",dur:1},
-      // Bar 33: C4 C4 quarters rest rest
+      // Bar 34: C4(q) C4(q) rest rest  — fingering 0 0
       {note:"C4",dur:1},{note:"C4",dur:1},{note:"R",dur:2},
-      // Bar 34: A4 Bb4 quarters rest rest
+      // Bar 35: A4(q) Bb4(q) rest rest  — fingering 12 23
       {note:"A4",dur:1},{note:"Bb4",dur:1},{note:"R",dur:2},
-      // Bar 35: Ab4(h) G4(w)
+      // Bar 36: Ab4(h) G4(w)  — fingering 23 13
       {note:"Ab4",dur:2},{note:"G4",dur:4},
-      // Bar 36: Db4 C4 Db4 quarters rest
+      // Bar 37: Db4(q) C4(q) Db4(q) rest  — fingering 123 0 123
       {note:"Db4",dur:1},{note:"C4",dur:1},{note:"Db4",dur:1},{note:"R",dur:1},
-      // Bar 37: G4 F4 Eb4 D4 quarters
+      // Bar 38: G4(q) F4(q) Eb4(q) D4(q)  — fingering 13 12 1 12
       {note:"G4",dur:1},{note:"F4",dur:1},{note:"Eb4",dur:1},{note:"D4",dur:1},
-      // Bar 38: Bb3(h) rest — final bar
+      // Bar 39: Bb3(h) rest  — final bar
       {note:"Bb3",dur:2},{note:"R",dur:2},
     ],
   },  },
@@ -186,6 +189,412 @@ const MELODIES = [
       {note:"F4",dur:2},{note:"E4",dur:2},{note:"D4",dur:4},
       {note:"C4",dur:2},{note:"C4",dur:2},{note:"E4",dur:2},{note:"E4",dur:2},
       {note:"G4",dur:2},{note:"G4",dur:2},{note:"G4",dur:4},
+    ],
+  },
+  {
+    title: "Ode to Joy",
+    notes: [
+      {note:"E4",dur:2},{note:"E4",dur:2},{note:"F4",dur:2},{note:"G4",dur:2},
+      {note:"G4",dur:2},{note:"F4",dur:2},{note:"E4",dur:2},{note:"D4",dur:2},
+      {note:"C4",dur:2},{note:"C4",dur:2},{note:"D4",dur:2},{note:"E4",dur:2},
+      {note:"E4",dur:4},{note:"D4",dur:4},
+    ],
+  },
+  {
+    title: "Mary Had a Little Lamb",
+    notes: [
+      {note:"E4",dur:2},{note:"D4",dur:2},{note:"C4",dur:2},{note:"D4",dur:2},
+      {note:"E4",dur:2},{note:"E4",dur:2},{note:"E4",dur:4},
+      {note:"D4",dur:2},{note:"D4",dur:2},{note:"D4",dur:4},
+      {note:"E4",dur:2},{note:"G4",dur:2},{note:"G4",dur:4},
+    ],
+  },
+  {
+    title: "Twinkle Twinkle",
+    notes: [
+      {note:"C4",dur:2},{note:"C4",dur:2},{note:"G4",dur:2},{note:"G4",dur:2},
+      {note:"A4",dur:2},{note:"A4",dur:2},{note:"G4",dur:4},
+      {note:"F4",dur:2},{note:"F4",dur:2},{note:"E4",dur:2},{note:"E4",dur:2},
+      {note:"D4",dur:2},{note:"D4",dur:2},{note:"C4",dur:4},
+    ],
+  },
+  {
+    title: "Hot Cross Buns",
+    notes: [
+      {note:"E4",dur:2},{note:"D4",dur:2},{note:"C4",dur:4},
+      {note:"E4",dur:2},{note:"D4",dur:2},{note:"C4",dur:4},
+      {note:"C4",dur:2},{note:"C4",dur:2},{note:"C4",dur:2},{note:"C4",dur:2},
+      {note:"D4",dur:2},{note:"D4",dur:2},{note:"D4",dur:2},{note:"D4",dur:2},
+      {note:"E4",dur:2},{note:"D4",dur:2},{note:"C4",dur:4},
+    ],
+  },
+  {
+    title: "Go Tell Aunt Rhody",
+    notes: [
+      {note:"G4",dur:4},{note:"E4",dur:2},{note:"E4",dur:2},
+      {note:"F4",dur:2},{note:"E4",dur:2},{note:"D4",dur:4},
+      {note:"C4",dur:2},{note:"C4",dur:2},{note:"E4",dur:2},{note:"E4",dur:2},
+      {note:"G4",dur:2},{note:"G4",dur:2},{note:"G4",dur:4},
+    ],
+  },
+  {
+    // Mardi Gras — Andy Norman
+    // 2nd Trombone/Baritone part, treble clef, C major (no key sig), 4/4, tempo 144
+    // "With a Calypso lilt" — syncopated eighth note pattern throughout
+    // Fingerings on score: 12=A/E, 1=F/Bb, 0=C/G, 2=B/F#
+    title: "Mardi Gras",
+    notes: [
+      // Bar 1 pickup: A4(eighth) A4(q) Bb4(h)  — fingering 12
+      {note:"A4",dur:0.5},{note:"A4",dur:1},{note:"Bb4",dur:2},
+      // Bar 2: Bb4(w)  — fingering 1
+      {note:"Bb4",dur:4},
+      // Bar 3: Bb4(w)  — fingering 1
+      {note:"Bb4",dur:4},
+      // Bar 4: A4(q) A4(q) C5(q) A4(q)  — fingering 12 0 12
+      {note:"A4",dur:1},{note:"A4",dur:1},{note:"C5",dur:1},{note:"A4",dur:1},
+      // Bar 5 A section: syncopated pattern — rest(e) C4 C4 C4 rest C4 C4 rest
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      // Bar 6: rest(e) C4 C4 C4 rest C4 C4 rest
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      // Bar 7: rest(e) C4 C4 C4 rest C4 C4 rest
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      // Bar 8: rest(e) C4 C4 C4 rest C4 C4 rest
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      // Bars 9-12: same syncopated pattern
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      // Bar 13 B section: similar pattern but different notes — rest(e) C4 D4 E4 rest D4 C4 rest
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      // Bars 14-16: same B pattern
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      // Bars 17-22: continue B section pattern
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      // Bar 24: fingering 12 — A4 pattern
+      {note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},
+      // Bars 25-27
+      {note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},
+      // Bar 28 C section: fuller notes
+      {note:"A4",dur:1},{note:"G4",dur:0.5},{note:"A4",dur:0.5},{note:"Bb4",dur:1},{note:"R",dur:0.5},{note:"G4",dur:0.5},
+      {note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"G4",dur:0.5},{note:"A4",dur:0.5},{note:"Bb4",dur:1},{note:"R",dur:0.5},{note:"G4",dur:0.5},
+      // Bars 30-32: C section continues
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      // Bar 33-36
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      // Bar 37 D section: back to long notes — A4(q) A4(h) A4(q) etc fingering 12 0 12 0
+      {note:"A4",dur:1},{note:"A4",dur:2},{note:"C5",dur:1},
+      // Bar 38: Bb4(w)
+      {note:"Bb4",dur:4},
+      // Bar 39: Bb4(w)
+      {note:"Bb4",dur:4},
+      // Bar 40: A4 A4 C5 A4
+      {note:"A4",dur:1},{note:"A4",dur:1},{note:"C5",dur:1},{note:"A4",dur:1},
+      // Bar 41 E section: back to calypso pattern
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"D4",dur:0.5},{note:"C4",dur:0.5},{note:"R",dur:0.5},
+    ],
+  },
+  {
+    // Mardi Gras — Andy Norman
+    // 2nd Trombone/Baritone, treble clef, C major (no key sig), 4/4, tempo 144
+    // "With a Calypso lilt" — syncopated eighth note pattern
+    // Notes confirmed bar by bar by player
+    // Structure: Intro | A | B | C(=A) | D(=Intro) | E(=A) | F(=B) | G(=A) | end
+    title: "Mardi Gras",
+    notes: [
+      // ── INTRO (bars 1-4): slow long notes ──
+      // Bar 1: C4(q) E4(q) G4(h)
+      {note:"C4",dur:1},{note:"E4",dur:1},{note:"G4",dur:2},
+      // Bar 2: G4(w)
+      {note:"G4",dur:4},
+      // Bar 3: F4(w)
+      {note:"F4",dur:4},
+      // Bar 4: F4(w)
+      {note:"F4",dur:4},
+      // Bar 5: E4(q) G4(q) A4(q) G4(q)
+      {note:"E4",dur:1},{note:"G4",dur:1},{note:"A4",dur:1},{note:"G4",dur:1},
+      // Bar 6: E4(w)
+      {note:"E4",dur:4},
+      // ── SECTION A (bars 5-12): G/F calypso pattern ──
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"R",dur:0.5},
+      // ── SECTION B (bars 13-22): A/F/G/E/F pattern ──
+      {note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"R",dur:1},{note:"R",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"E4",dur:0.5},{note:"E4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"E4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"E4",dur:0.5},{note:"E4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"E4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      // ── SECTION C (bars 28-36): same as A ──
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"R",dur:0.5},
+      // ── SECTION D (bars 37-42): same as Intro ──
+      {note:"C4",dur:1},{note:"E4",dur:1},{note:"G4",dur:2},
+      {note:"G4",dur:4},
+      {note:"F4",dur:4},
+      {note:"F4",dur:4},
+      {note:"E4",dur:1},{note:"G4",dur:1},{note:"A4",dur:1},{note:"G4",dur:1},
+      {note:"E4",dur:4},
+      // ── SECTION E (bars 41-46): same as A ──
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"R",dur:0.5},
+      // ── SECTION F (bars 49-58): same as B ──
+      {note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},{note:"A4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"R",dur:1},{note:"R",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"E4",dur:0.5},{note:"E4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"E4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"E4",dur:0.5},{note:"E4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"E4",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      // ── SECTION G (bars 65-72): same as A, final section ──
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"R",dur:0.5},
+      {note:"R",dur:0.5},{note:"G4",dur:0.5},{note:"G4",dur:0.5},{note:"R",dur:0.5},{note:"F4",dur:0.5},{note:"F4",dur:0.5},{note:"R",dur:0.5},{note:"R",dur:0.5},
+    ],
+  },
+  {
+    // Guava Guy — Andy Norman, Part 3 Bb
+    // Treble clef, no key signature, 4/4, Fast
+    // "A distant cousin of Watermelon Man"
+    // Notes confirmed by player: each section starts C4
+    // Valve key: 0=C/G, 13=D/G, 1=F/Bb, 12=A/E, 23=Eb/Ab, 2=B3
+    title: "Guava Guy",
+    notes: [
+      // ── BARS 1-4: main riff ──
+      // Bar 1: C(q) C(q) C(q) D(e) D(e)
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:0.5},{note:"D4",dur:0.5},
+      // Bar 2: same
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:0.5},{note:"D4",dur:0.5},
+      // Bar 3: same
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:0.5},{note:"D4",dur:0.5},
+      // Bar 4: same
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:0.5},{note:"D4",dur:0.5},
+      // ── BARS 5-6: F/Eb variation ──
+      // Bar 5: F(q) F(q) Eb(q) Eb(e) Eb(e)
+      {note:"F4",dur:1},{note:"F4",dur:1},{note:"Eb4",dur:1},{note:"Eb4",dur:0.5},{note:"Eb4",dur:0.5},
+      // Bar 6: same
+      {note:"F4",dur:1},{note:"F4",dur:1},{note:"Eb4",dur:1},{note:"Eb4",dur:0.5},{note:"Eb4",dur:0.5},
+      // ── BARS 7-8: back to main riff ──
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:0.5},{note:"D4",dur:0.5},
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:0.5},{note:"D4",dur:0.5},
+      // ── BARS 9-13: low B section ──
+      // Bar 9: B3(h) B3(q) C4(q)
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      // Bar 10: B3(h) B3(q) C4(q)
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      // Bar 11: B3(h) B3(q) C4(q)
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      // Bar 12: B3(h) B3(q) C4(q)
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      // Bar 13: B3(h) rest(h)
+      {note:"B3",dur:2},{note:"R",dur:2},
+      // ── SECTION A (bars 14-19): quarter note runs, fingering 13 ──
+      // Bar 14: C4(q) D4(q) C4(q) D4(q)
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      // Bar 15: C4(q) D4(q) C4(q) D4(q)
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      // Bar 16: C4(q) D4(q) C4(q) D4(q)
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      // Bar 17: C4(q) D4(q) C4(q) D4(q)
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      // Bar 18: C4(q) D4(q) C4(q) D4(q)
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      // Bar 19: C4(q) D4(q) C4(q) D4(q)
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      // ── BARS 20-25: chromatic/accidental section ──
+      // Bar 20: C4(q) D4(q) Eb4(q) D4(q) — chromatic rise
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"Eb4",dur:1},{note:"D4",dur:1},
+      // Bar 21: F4(q) Eb4(q) D4(q) C4(q)
+      {note:"F4",dur:1},{note:"Eb4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},
+      // Bar 22: same chromatic descending
+      {note:"F4",dur:1},{note:"Eb4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},
+      // Bar 23: G4(h) rest(h) — fingering 13
+      {note:"G4",dur:2},{note:"R",dur:2},
+      // Bar 24: B3(h) B3(h) — fingering 2
+      {note:"B3",dur:2},{note:"B3",dur:2},
+      // Bar 25: B3(h) B3(q) C4(q)
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      // Bar 26-32: B3/C4 pattern continuing
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      {note:"B3",dur:2},{note:"R",dur:2},
+      // ── SECTION B (bars 33-44): A4/E4 section, fingering 12/13 ──
+      // Bar 33: C4(q) E4(q) C4(q) E4(q) — fingering 12
+      {note:"C4",dur:1},{note:"E4",dur:1},{note:"C4",dur:1},{note:"E4",dur:1},
+      // Bar 34: C4(q) E4(q) C4(q) E4(q)
+      {note:"C4",dur:1},{note:"E4",dur:1},{note:"C4",dur:1},{note:"E4",dur:1},
+      // Bar 35: A4(q) G4(q) A4(q) G4(q) — fingering 12 13
+      {note:"A4",dur:1},{note:"G4",dur:1},{note:"A4",dur:1},{note:"G4",dur:1},
+      // Bar 36: A4(q) G4(q) A4(q) G4(q)
+      {note:"A4",dur:1},{note:"G4",dur:1},{note:"A4",dur:1},{note:"G4",dur:1},
+      // Bar 37: C4(q) E4(q) C4(q) E4(q)
+      {note:"C4",dur:1},{note:"E4",dur:1},{note:"C4",dur:1},{note:"E4",dur:1},
+      // Bar 38: C4(q) E4(q) C4(q) E4(q)
+      {note:"C4",dur:1},{note:"E4",dur:1},{note:"C4",dur:1},{note:"E4",dur:1},
+      // Bar 39: G4(w) — fingering 13
+      {note:"G4",dur:4},
+      // Bar 40: Eb4(w) — fingering 23
+      {note:"Eb4",dur:4},
+      // Bar 41: C4(q) E4(q) C4(q) rest
+      {note:"C4",dur:1},{note:"E4",dur:1},{note:"C4",dur:1},{note:"R",dur:1},
+      // Bar 42: A4(q) G4(q) A4(q) rest
+      {note:"A4",dur:1},{note:"G4",dur:1},{note:"A4",dur:1},{note:"R",dur:1},
+      // Bar 43: C4(q) E4(q) C4(q) rest
+      {note:"C4",dur:1},{note:"E4",dur:1},{note:"C4",dur:1},{note:"R",dur:1},
+      // Bar 44: B3(h) rest(h)
+      {note:"B3",dur:2},{note:"R",dur:2},
+      // ── SECTION C (bars 45-56): same as A ──
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},{note:"D4",dur:1},
+      {note:"C4",dur:1},{note:"D4",dur:1},{note:"Eb4",dur:1},{note:"D4",dur:1},
+      {note:"F4",dur:1},{note:"Eb4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},
+      {note:"F4",dur:1},{note:"Eb4",dur:1},{note:"D4",dur:1},{note:"C4",dur:1},
+      {note:"G4",dur:2},{note:"R",dur:2},
+      {note:"Eb4",dur:4},
+      {note:"C4",dur:1},{note:"E4",dur:1},{note:"C4",dur:1},{note:"R",dur:1},
+      // ── SECTION D (bars 57-70): repeat of opening ──
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:0.5},{note:"D4",dur:0.5},
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:0.5},{note:"D4",dur:0.5},
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:0.5},{note:"D4",dur:0.5},
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:0.5},{note:"D4",dur:0.5},
+      {note:"F4",dur:1},{note:"F4",dur:1},{note:"Eb4",dur:1},{note:"Eb4",dur:0.5},{note:"Eb4",dur:0.5},
+      {note:"F4",dur:1},{note:"F4",dur:1},{note:"Eb4",dur:1},{note:"Eb4",dur:0.5},{note:"Eb4",dur:0.5},
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:0.5},{note:"D4",dur:0.5},
+      {note:"C4",dur:1},{note:"C4",dur:1},{note:"C4",dur:1},{note:"D4",dur:0.5},{note:"D4",dur:0.5},
+      // Bars 63-67: B3 section
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      {note:"B3",dur:2},{note:"B3",dur:1},{note:"C4",dur:1},
+      {note:"B3",dur:2},{note:"R",dur:2},
+      // Bars 68-70: final ending
+      {note:"B3",dur:2},{note:"R",dur:1},{note:"C4",dur:1},
+      {note:"B3",dur:2},{note:"R",dur:2},
+      {note:"G4",dur:4},
+    ],
+  },
+  {
+    // Haydn Surprise Symphony — euphonium part
+    // bigshinybrass.com, treble clef, no key sig, 4/4, "With a steady beat"
+    // Line 1 confirmed: C4 C4 F4 G4 F4
+    // Line 2 confirmed: C4 A4 D4 B4 E4 E4
+    // Fingerings: 0=C/G, 1=F/Bb, 12=A/E, 13=D/G, 2=B3/F#, 23=Eb/Ab
+    title: "Haydn Surprise Symphony",
+    notes: [
+      // ── LINE 1 (bars 1-5) ──
+      // Bar 1: rest(h) C4(h)  — mp, open
+      {note:"R",dur:2},{note:"C4",dur:2},
+      // Bar 2: rest(h) C4(h)
+      {note:"R",dur:2},{note:"C4",dur:2},
+      // Bar 3: rest(h) F4(h)  — fingering 1
+      {note:"R",dur:2},{note:"F4",dur:2},
+      // Bar 4: rest(h) G4(h)  — fingering 13 (open)
+      {note:"R",dur:2},{note:"G4",dur:2},
+      // Bar 5: rest(h) F4(h)  — fingering 1
+      {note:"R",dur:2},{note:"F4",dur:2},
+      // ── LINE 2 (bars 6-10) ──
+      // Bar 6: C4(h) rest(h) — fingering 0... then A4 quarter rest quarter
+      {note:"C4",dur:2},{note:"R",dur:1},{note:"A4",dur:0.5},{note:"R",dur:0.5},
+      // Bar 7: D4(h) rest(h)  — fingering 13
+      {note:"D4",dur:2},{note:"R",dur:2},
+      // Bar 8: rest(h) B3(h)  — fingering 2 (natural B)
+      {note:"R",dur:2},{note:"B3",dur:2},
+      // Bar 9: rest(h) A4(h)  — fingering 12, p
+      {note:"R",dur:2},{note:"A4",dur:2},
+      // Bar 10: rest(h) E4(h)  — fingering 12
+      {note:"R",dur:2},{note:"E4",dur:2},
+      // Bar 11: rest(h) E4(h)
+      {note:"R",dur:2},{note:"E4",dur:2},
+      // ── LINE 3 (bars 12-17) ──
+      // Bar 12: rest(h) F4(h)  — fingering 1
+      {note:"R",dur:2},{note:"F4",dur:2},
+      // Bar 13: rest(h) F4(h)
+      {note:"R",dur:2},{note:"F4",dur:2},
+      // Bar 14: rest(h) A4(h)  — fingering 12
+      {note:"R",dur:2},{note:"A4",dur:2},
+      // Bar 15: rest(h) A4(h)
+      {note:"R",dur:2},{note:"A4",dur:2},
+      // Bar 16: rest(h) A4(h)  — fingering 12
+      {note:"R",dur:2},{note:"A4",dur:2},
+      // Bar 17: A4(q) rest(q) E4(q) rest(q)  — fingering 12 13
+      {note:"A4",dur:1},{note:"R",dur:1},{note:"E4",dur:0.5},{note:"R",dur:0.5},{note:"E4",dur:0.5},{note:"R",dur:0.5},
+      // ── LINE 4 (bars 18-22): ff section — the "surprise"! ──
+      // Bar 18: C4(q) rest A4(h) — loud chord, fingering 0 then 12 ff
+      {note:"C4",dur:1},{note:"R",dur:1},{note:"A4",dur:2},
+      // Bar 19: A4(h) A4(h)  — mp, fingering 0
+      {note:"A4",dur:2},{note:"A4",dur:2},
+      // Bar 20: C4(w)  — fingering 0
+      {note:"C4",dur:4},
+      // Bar 21: rest(h) D4(h)  — fingering 13
+      {note:"R",dur:2},{note:"D4",dur:2},
+      // Bar 22: rest(q) D4(q) G4(q) C4(q)  — fingering 13 0
+      {note:"R",dur:1},{note:"D4",dur:1},{note:"G4",dur:1},{note:"C4",dur:1},
+      // Bar 23: E4(q) D4(q) C4(h)  — fingering 12 13 0
+      {note:"E4",dur:1},{note:"D4",dur:1},{note:"C4",dur:2},
+      // Bar 24: rest(h) D4(h)
+      {note:"R",dur:2},{note:"D4",dur:2},
+      // ── LINE 5 (bars 25-end): final section ──
+      // Bar 25: A4(h) A4(h)  — fingering 12 12
+      {note:"A4",dur:2},{note:"A4",dur:2},
+      // Bar 26: C4(h) C4(h)  — fingering 0
+      {note:"C4",dur:2},{note:"C4",dur:2},
+      // Bar 27: rest(h) D4(h)  — fingering 13 13
+      {note:"R",dur:2},{note:"D4",dur:2},
+      // Bar 28: D4(h) rest(h)
+      {note:"D4",dur:2},{note:"R",dur:2},
+      // Bar 29: C4 D4 E4 F4 G4 A4 run — fingering 0 2 12 22 0 12
+      {note:"C4",dur:0.5},{note:"D4",dur:0.5},{note:"E4",dur:0.5},{note:"F4",dur:0.5},{note:"G4",dur:0.5},{note:"A4",dur:0.5},{note:"R",dur:1},
+      // Bar 30: A4(h) rest(h)  — fingering 12
+      {note:"A4",dur:2},{note:"R",dur:2},
+      // Bar 31: C4(h) rest  — fingering 0
+      {note:"C4",dur:2},{note:"R",dur:2},
+      // Final bar: C4(w)
+      {note:"C4",dur:4},
     ],
   },
 ];
