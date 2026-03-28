@@ -452,15 +452,26 @@ export default function SheetCoach() {
               {error}
             </div>
           )}
-          <label style={{
-            display:"inline-block", padding:"12px 28px", borderRadius:10,
-            background:"#2563eb", color:"white", fontWeight:700, fontSize:14,
-            cursor:"pointer",
-          }}>
-            Choose Photo
-            <input type="file" accept="image/*" capture="environment"
-              onChange={handleImageUpload} style={{ display:"none" }} />
-          </label>
+          <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
+            <label style={{
+              display:"inline-block", padding:"12px 24px", borderRadius:10,
+              background:"#2563eb", color:"white", fontWeight:700, fontSize:14,
+              cursor:"pointer",
+            }}>
+              📁 Choose from Gallery
+              <input type="file" accept="image/*"
+                onChange={handleImageUpload} style={{ display:"none" }} />
+            </label>
+            <label style={{
+              display:"inline-block", padding:"12px 24px", borderRadius:10,
+              background:"#7c3aed", color:"white", fontWeight:700, fontSize:14,
+              cursor:"pointer",
+            }}>
+              📷 Take a Photo
+              <input type="file" accept="image/*" capture="environment"
+                onChange={handleImageUpload} style={{ display:"none" }} />
+            </label>
+          </div>
           <div style={{ fontSize:11, color:"#9ca3af", marginTop:12 }}>
             JPG, PNG or HEIC — printed treble clef music only
           </div>
