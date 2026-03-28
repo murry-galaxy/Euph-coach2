@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+7import React, { useState, useRef, useEffect, useCallback } from "react";
 
 // ─── Note helpers ─────────────────────────────────────────────────────────────
 const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
@@ -529,4 +529,4 @@ export default function ScoreCoach() {
               <div style={{ fontSize:11, color:"#9ca3af", marginBottom:2 }}>You're playing</div>
               <div style={{
                 fontSize:44, fontWeight:800, letterSpacing:-2, lineHeight:1,
-                color: inTune ? "#16a34a" : detectedNote ? "#f5
+                color: inTune ? "#16a34a" : detectedNote ? "#f59e0b" : "#d1d5db",
