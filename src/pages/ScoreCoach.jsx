@@ -1,4 +1,4 @@
-7import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 
 // ─── Note helpers ─────────────────────────────────────────────────────────────
 const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
@@ -530,3 +530,68 @@ export default function ScoreCoach() {
               <div style={{
                 fontSize:44, fontWeight:800, letterSpacing:-2, lineHeight:1,
                 color: inTune ? "#16a34a" : detectedNote ? "#f59e0b" : "#d1d5db",
+              }}>
+                {detectedNote || "—"}
+              </div>
+            </div>
+          </div>
+
+          {/* Cents */}
+          {detectedNote && (
+            <div style={{ fontSize:12, color: inTune ? "#16a34a" : "#9ca3af", marginTop:6 }}>
+              {inTune
+                ? `✓ In tune${centsOff !== 0 ? ` (${centsOff > 0 ? "+" : ""}${centsOff}¢)` : ""}`
+                : `${centsOff > 0 ? "+" : ""}${centsOff}¢ — ${centsOff < 0 ? "too flat" : "too sharp"}`}
+            </div>
+          )}
+
+          {/* Hold progress bar */}
+          <div style={{
+            height:8, borderRadius:4, background:"#f3f4f6",
+            margin:"10px 0 0", overflow:"hidden",
+          }}>
+            <div style={{
+              height:"100%", borderRadius:4,
+              width:`${holdProgress}%`,
+              background: holdStatus === "locked" ? "#16a34a" : "#2563eb",
+              transition:"width 0.05s linear, background 0.2s",
+            }} />
+          </div>
+          <div style={{ fontSize:11, color:"#9ca3af", marginTop:4 }}>
+            {holdStatus === "locked"
+              ? "✓ Note confirmed!"
+              : holdStatus === "holding"
+              ? "Hold steady…"
+              : listening ? "Start playing…" : "Press Start to begin"}
+          </div>
+        </div>
+      )}
+
+      {/* Mic button */}
+      {!done && (
+        <div style={{ marginBottom:12 }}>
+          <button onClick={toggleListen} style={{
+            width:"100%", padding:"14px 0", borderRadius:12, border:"none",
+            background: listening ? "#dc2626" : "#2563eb",
+            color:"white", fontSize:16, fontWeight:700, cursor:"pointer",
+            boxShadow: listening
+              ? "0 4px 12px rgba(220,38,38,0.3)"
+              : "0 4px 12px rgba(37,99,235,0.3)",
+          }}>
+            {listening ? "⏹ Stop" : "🎤 Start Listening"}
+          </button>
+        </div>
+      )}
+
+      {/* Score summary */}
+      {done && (
+        <ScoreSummary
+          results={results}
+          notes={notes}
+          onRetry={() => reset(melodyIdx)}
+          onNext={handleNext}
+        />
+      )}
+    </div>
+  );
+}
