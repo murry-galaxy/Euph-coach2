@@ -1,9 +1,18 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 
 const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const DISPLAY_NAMES = ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
 const WORKER_URL = "https://euph-coach-api.david-murat.workers.dev/";
 
-// ---- Note helpers -----------------------------------------------------------
+// All writable notes for euphonium treble Bb, from low to high
+const ALL_NOTES = [
+  "Bb2","B2",
+  "C3","C#3","D3","Eb3","E3","F3","F#3","G3","Ab3","A3","Bb3","B3",
+  "C4","C#4","D4","Eb4","E4","F4","F#4","G4","Ab4","A4","Bb4","B4",
+  "C5","C#5","D5","Eb5","E5","F5","F#5","G5","Ab5","A5","Bb5","B5",
+  "C6","R"
+];
+
 function midiFromWritten(noteStr) {
   if (!noteStr || noteStr === "R") return null;
   const m = noteStr.match(/^([A-G](?:#|b)?)(\d)$/);
@@ -15,22 +24,18 @@ function midiFromWritten(noteStr) {
   return (oct + 1) * 12 + NOTE_NAMES.indexOf(name);
 }
 
-// Bb treble euphonium: written - 14 semitones = concert pitch
 function writtenToConcert(noteStr) {
   const m = midiFromWritten(noteStr);
   return m != null ? m - 14 : null;
 }
 
-function midiToFreq(midi) {
-  return 440 * Math.pow(2, (midi - 69) / 12);
-}
+function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
 
 function freqToMidi(freq) {
   if (!freq || freq <= 0) return null;
   return Math.round(12 * Math.log2(freq / 440) + 69);
 }
 
-// ---- Autocorrelation pitch detector -----------------------------------------
 function autoCorrelate(buffer, sampleRate) {
   const SIZE = buffer.length;
   let rms = 0;
@@ -55,7 +60,6 @@ function autoCorrelate(buffer, sampleRate) {
   return sampleRate / (denom !== 0 ? maxPos + (y3 - y1) / denom : maxPos);
 }
 
-// ---- Play a note via Web Audio ----------------------------------------------
 function playNote(audioCtx, midi, durationSec, startTime) {
   const freq = midiToFreq(midi);
   const osc = audioCtx.createOscillator();
@@ -72,55 +76,16 @@ function playNote(audioCtx, midi, durationSec, startTime) {
   osc.stop(startTime + durationSec);
 }
 
-// ---- AI transcription -------------------------------------------------------
 async function transcribeSheetMusic(base64Image, mediaType) {
-  const systemPrompt =
-    "You are an expert music transcriber. Transcribe the sheet music photo into JSON.\n\n" +
-    "RULES:\n" +
-    "1. Written notes only, do NOT transpose.\n" +
-    "2. Read the clef and key signature carefully first.\n" +
-    "3. Treble clef staff lines bottom to top: E4 G4 B4 D5 F5. Spaces: F4 A4 C5 E5.\n" +
-    "4. Middle C (C4) sits on the ledger line below the staff.\n" +
-    "5. Apply key signature flats/sharps to ALL notes unless cancelled by a natural sign.\n" +
-    "6. INCLUDE RESTS as {\"note\":\"R\",\"dur\":X} - rests are essential for rhythm.\n" +
-    "7. Durations: 4=whole, 2=half, 1=quarter, 0.5=eighth.\n" +
-    "8. Accidentals: use b for flat (Bb4, Eb4, Ab4, Db4) and # for sharp (C#4, F#4).\n" +
-    "9. Work bar by bar left to right. Count beats to verify each bar.\n" +
-    "10. Return ONLY raw JSON, no markdown fences, no explanation.\n\n" +
-    "Output format:\n" +
-    "{\"title\":\"Song Name\",\"timeSignature\":\"4/4\",\"notes\":[{\"note\":\"C4\",\"dur\":1},{\"note\":\"R\",\"dur\":1},{\"note\":\"G4\",\"dur\":2}]}";
-
   const response = await fetch(WORKER_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4000,
-      system: systemPrompt,
-      messages: [{
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: base64Image } },
-          { type: "text", text: "Transcribe all notes and rests from this sheet music." }
-        ]
-      }]
-    })
+    body: JSON.stringify({ _transcribe: true, imageBase64: base64Image, mediaType })
   });
-
-  if (!response.ok) throw new Error("API error " + response.status);
+  if (!response.ok) throw new Error("Network error " + response.status);
   const data = await response.json();
-
-  // Handle API-level errors (bad key, quota, etc)
-  if (data.error) throw new Error("API error: " + (data.error.message || JSON.stringify(data.error)));
-  if (!data.content) throw new Error("Invalid API response. Please check your API key is active.");
-
-  const text = data.content.find(b => b.type === "text")?.text || "";
-  if (!text) throw new Error("No text returned from API.");
-
-  const clean = text.replace(/```json|```/g, "").trim();
-  let parsed;
-  try { parsed = JSON.parse(clean); }
-  catch(e) { throw new Error("Could not parse transcription. Try a clearer photo."); }
+  if (!data.success) throw new Error(data.error || "Transcription failed.");
+  const parsed = data.data;
   if (!parsed.notes || parsed.notes.length === 0) throw new Error("No notes found in image.");
   return parsed;
 }
@@ -135,7 +100,7 @@ function MiniStaff({ notes, currentIdx, results }) {
   const LETTER_INDEX = { C:0, D:1, E:2, F:3, G:4, A:5, B:6 };
 
   function notePos(noteStr) {
-    if (!noteStr || noteStr === "R") return -99; // rests not drawn on staff
+    if (!noteStr || noteStr === "R") return -99;
     const m = noteStr.match(/^([A-G](?:#|b)?)(\d)$/);
     if (!m) return 0;
     const letter = m[1][0].toUpperCase();
@@ -165,15 +130,14 @@ function MiniStaff({ notes, currentIdx, results }) {
           const midY = STAFF_TOP + 2 * LINE_GAP;
 
           if (isRest) {
-            // Draw rest symbol
             return (
               <g key={i}>
-                {isCurrent && <rect x={nx-8} y={STAFF_TOP} width={16} height={4*LINE_GAP} fill="#dbeafe" opacity={0.5} rx={2} />}
+                {isCurrent && <rect x={nx-8} y={STAFF_TOP} width={16} height={4*LINE_GAP} fill="#dbeafe" opacity={0.4} rx={2} />}
                 {n.dur >= 4
-                  ? <rect key={i} x={nx-8} y={midY-LINE_GAP} width={16} height={LINE_GAP/2} fill={fill} />
+                  ? <rect x={nx-8} y={midY - LINE_GAP} width={16} height={LINE_GAP / 2} fill={fill} />
                   : n.dur === 2
-                  ? <rect key={i} x={nx-8} y={midY} width={16} height={LINE_GAP/2} fill={fill} />
-                  : <text x={nx-4} y={midY+4} fontSize="14" fill={fill} fontFamily="serif">{"z"}</text>
+                  ? <rect x={nx-8} y={midY} width={16} height={LINE_GAP / 2} fill={fill} />
+                  : <text x={nx-4} y={midY+4} fontSize="13" fill={fill} fontFamily="serif">z</text>
                 }
               </g>
             );
@@ -215,7 +179,211 @@ function MiniStaff({ notes, currentIdx, results }) {
   );
 }
 
-// ---- Score summary ----------------------------------------------------------
+// ---- Note Editor ------------------------------------------------------------
+function NoteEditor({ notes, onDone }) {
+  const [editNotes, setEditNotes] = useState(notes.map((n, i) => ({ ...n, id: i })));
+  const [selected, setSelected] = useState(0);
+
+  function changeNote(idx, direction) {
+    const current = editNotes[idx].note;
+    const pos = ALL_NOTES.indexOf(current);
+    const newPos = Math.max(0, Math.min(ALL_NOTES.length - 1, pos + direction));
+    const updated = [...editNotes];
+    updated[idx] = { ...updated[idx], note: ALL_NOTES[newPos] };
+    setEditNotes(updated);
+  }
+
+  function changeDur(idx, dur) {
+    const updated = [...editNotes];
+    updated[idx] = { ...updated[idx], dur };
+    setEditNotes(updated);
+  }
+
+  function deleteNote(idx) {
+    const updated = editNotes.filter((_, i) => i !== idx);
+    setEditNotes(updated);
+    setSelected(Math.min(selected, updated.length - 1));
+  }
+
+  function addNote(idx) {
+    const updated = [...editNotes];
+    updated.splice(idx + 1, 0, { note: "C4", dur: 1, id: Date.now() });
+    setEditNotes(updated);
+    setSelected(idx + 1);
+  }
+
+  const sel = editNotes[selected];
+
+  const card = { background:"white", border:"1px solid #e5e7eb", borderRadius:16, padding:16, marginBottom:12 };
+
+  return (
+    <div>
+      <div style={{ background:"#fffbeb", border:"1px solid #fde68a", borderRadius:12, padding:"10px 14px", marginBottom:14, fontSize:13, color:"#92400e" }}>
+        Check each note — tap a note to select it, then use the controls below to correct it.
+      </div>
+
+      {/* Staff with selectable notes */}
+      <div style={{ ...card, padding:12 }}>
+        <div style={{ fontSize:11, color:"#6b7280", marginBottom:6 }}>Tap a note to select it</div>
+        <div style={{ overflowX:"auto" }}>
+          <svg width={Math.max(LEFT_PAD + editNotes.length * 38 + 20, 300)} height={100} style={{ display:"block" }}
+            onClick={e => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const LEFT_PAD = 44;
+              const NOTE_STEP = 38;
+              const idx = Math.floor((x - LEFT_PAD) / NOTE_STEP);
+              if (idx >= 0 && idx < editNotes.length) setSelected(idx);
+            }}
+          >
+            {[0,1,2,3,4].map(i => {
+              const LINE_GAP = 10, STAFF_TOP = 28;
+              const y = STAFF_TOP + i * LINE_GAP;
+              return <line key={i} x1={38} x2={Math.max(44 + editNotes.length * 38 + 20, 300) - 8} y1={y} y2={y} stroke="#374151" strokeWidth="1.2" />;
+            })}
+            <text x={2} y={69} fontSize="44" fontFamily="serif" fill="#374151">{"\uD834\uDD1E"}</text>
+            {editNotes.map((n, i) => {
+              const LINE_GAP = 10, STAFF_TOP = 28, LEFT_PAD = 44, NOTE_STEP = 38;
+              const LETTER_INDEX = { C:0, D:1, E:2, F:3, G:4, A:5, B:6 };
+              const isRest = n.note === "R";
+              const isSel = i === selected;
+              const nx = LEFT_PAD + i * NOTE_STEP + 12;
+              const midY = STAFF_TOP + 2 * LINE_GAP;
+              const fill = isSel ? "#2563eb" : "#374151";
+              const bg = isSel ? "#dbeafe" : "transparent";
+
+              if (isRest) {
+                return (
+                  <g key={i}>
+                    <rect x={nx-10} y={STAFF_TOP} width={20} height={4*LINE_GAP} fill={bg} rx={3} />
+                    {n.dur >= 4
+                      ? <rect x={nx-8} y={midY-LINE_GAP} width={16} height={LINE_GAP/2} fill={fill} />
+                      : <rect x={nx-8} y={midY} width={16} height={LINE_GAP/2} fill={fill} />
+                    }
+                  </g>
+                );
+              }
+
+              function notePos(noteStr) {
+                const m = noteStr.match(/^([A-G](?:#|b)?)(\d)$/);
+                if (!m) return 0;
+                const letter = m[1][0].toUpperCase();
+                const oct = parseInt(m[2], 10);
+                return 7 * oct + LETTER_INDEX[letter] - (7 * 4 + LETTER_INDEX["E"]);
+              }
+              function posToY(pos) { return STAFF_TOP + 4 * LINE_GAP - pos * (LINE_GAP / 2); }
+
+              const pos = notePos(n.note);
+              const ny = posToY(pos);
+              const isOpen = n.dur >= 4;
+              const acc = n.note.match(/^[A-G]([#b])/)?.[1] || null;
+              const stemUp = pos <= 4;
+              const stemX = nx + (stemUp ? 6 : -6);
+
+              return (
+                <g key={i}>
+                  <rect x={nx-10} y={STAFF_TOP} width={20} height={4*LINE_GAP} fill={bg} rx={3} opacity={0.5} />
+                  {acc === "#" && <text x={nx-13} y={ny+4} fontSize="12" fontFamily="serif" fill={fill}>#</text>}
+                  {acc === "b" && <text x={nx-13} y={ny+4} fontSize="12" fontFamily="serif" fill={fill}>b</text>}
+                  <ellipse cx={nx} cy={ny} rx={6} ry={4.5}
+                    fill={isOpen || n.dur === 2 ? (isSel ? "#dbeafe" : "white") : fill}
+                    stroke={fill} strokeWidth="1.5"
+                    transform={"rotate(-15 " + nx + " " + ny + ")"}
+                  />
+                  {!isOpen && <line x1={stemX} y1={ny} x2={stemX} y2={stemUp ? ny-26 : ny+26} stroke={fill} strokeWidth="1.5" />}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+        {/* Note index indicator */}
+        <div style={{ fontSize:11, color:"#9ca3af", marginTop:4, textAlign:"center" }}>
+          Note {selected + 1} of {editNotes.length} selected
+        </div>
+      </div>
+
+      {/* Editor controls for selected note */}
+      {sel && (
+        <div style={card}>
+          <div style={{ fontSize:13, fontWeight:700, marginBottom:12, color:"#374151" }}>
+            Editing note {selected + 1}: <span style={{ color:"#2563eb" }}>{sel.note}</span>
+          </div>
+
+          {/* Pitch control */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:11, color:"#6b7280", marginBottom:6 }}>Pitch</div>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <button onClick={() => changeNote(selected, -1)} style={{ width:44, height:44, borderRadius:10, border:"1px solid #e5e7eb", background:"#f9fafb", fontSize:20, cursor:"pointer" }}>▼</button>
+              <div style={{ flex:1, textAlign:"center", fontSize:28, fontWeight:800, color:"#111827" }}>{sel.note}</div>
+              <button onClick={() => changeNote(selected, 1)} style={{ width:44, height:44, borderRadius:10, border:"1px solid #e5e7eb", background:"#f9fafb", fontSize:20, cursor:"pointer" }}>▲</button>
+            </div>
+            <div style={{ display:"flex", gap:6, marginTop:8, flexWrap:"wrap" }}>
+              {/* Quick pitch buttons */}
+              {["Bb3","C4","D4","Eb4","E4","F4","G4","Ab4","A4","Bb4","C5","D5","Eb5","F5","G5","R"].map(n => (
+                <button key={n} onClick={() => { const updated=[...editNotes]; updated[selected]={...sel,note:n}; setEditNotes(updated); }}
+                  style={{ padding:"4px 8px", borderRadius:6, fontSize:12, fontWeight:600,
+                    border: sel.note === n ? "none" : "1px solid #e5e7eb",
+                    background: sel.note === n ? "#2563eb" : "#f9fafb",
+                    color: sel.note === n ? "white" : "#374151", cursor:"pointer" }}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Duration control */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:11, color:"#6b7280", marginBottom:6 }}>Duration</div>
+            <div style={{ display:"flex", gap:8 }}>
+              {[{label:"Whole",val:4},{label:"Half",val:2},{label:"Quarter",val:1},{label:"Eighth",val:0.5}].map(d => (
+                <button key={d.val} onClick={() => changeDur(selected, d.val)}
+                  style={{ flex:1, padding:"8px 4px", borderRadius:8, fontSize:12, fontWeight:600,
+                    border:"none",
+                    background: sel.dur === d.val ? "#2563eb" : "#f3f4f6",
+                    color: sel.dur === d.val ? "white" : "#374151", cursor:"pointer" }}>
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={() => addNote(selected)}
+              style={{ flex:1, padding:"8px 0", borderRadius:8, border:"1px solid #e5e7eb", background:"white", fontSize:13, fontWeight:600, color:"#374151", cursor:"pointer" }}>
+              + Insert after
+            </button>
+            <button onClick={() => deleteNote(selected)}
+              style={{ flex:1, padding:"8px 0", borderRadius:8, border:"none", background:"#fef2f2", fontSize:13, fontWeight:600, color:"#dc2626", cursor:"pointer" }}>
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+        <button onClick={() => setSelected(Math.max(0, selected - 1))}
+          style={{ flex:1, padding:"10px 0", borderRadius:10, border:"1px solid #e5e7eb", background:"white", fontWeight:600, fontSize:14, cursor:"pointer" }}>
+          ← Prev
+        </button>
+        <button onClick={() => setSelected(Math.min(editNotes.length - 1, selected + 1))}
+          style={{ flex:1, padding:"10px 0", borderRadius:10, border:"1px solid #e5e7eb", background:"white", fontWeight:600, fontSize:14, cursor:"pointer" }}>
+          Next →
+        </button>
+      </div>
+
+      <button onClick={() => onDone(editNotes)}
+        style={{ width:"100%", padding:"14px 0", borderRadius:12, border:"none", background:"#16a34a", color:"white", fontSize:16, fontWeight:700, cursor:"pointer", marginBottom:12 }}>
+        Looks good — start practising
+      </button>
+    </div>
+  );
+}
+
+const LEFT_PAD = 44;
+
+// ---- Summary ----------------------------------------------------------------
 function Summary({ results, notes, onRetry, onBack }) {
   const playable = notes.filter(n => n.note !== "R");
   const correct = results.filter(r => r === "correct").length;
@@ -228,15 +396,15 @@ function Summary({ results, notes, onRetry, onBack }) {
       <div style={{ fontSize:14, color:"#6b7280", marginBottom:20 }}>{correct} / {playable.length} notes correct</div>
       <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
         <button onClick={onRetry} style={{ padding:"12px 24px", borderRadius:10, border:"none", background:"#2563eb", color:"white", fontWeight:700, cursor:"pointer" }}>Try Again</button>
-        <button onClick={onBack} style={{ padding:"12px 24px", borderRadius:10, border:"1px solid #e5e7eb", background:"white", color:"#374151", fontWeight:700, cursor:"pointer" }}>Back to Score</button>
+        <button onClick={onBack} style={{ padding:"12px 24px", borderRadius:10, border:"1px solid #e5e7eb", background:"white", color:"#374151", fontWeight:700, cursor:"pointer" }}>Back</button>
       </div>
     </div>
   );
 }
 
-// ---- Main component ---------------------------------------------------------
+// ---- Main -------------------------------------------------------------------
 export default function SheetCoach() {
-  const [stage, setStage] = useState("upload"); // upload | transcribing | review | practice | done
+  const [stage, setStage] = useState("upload"); // upload|transcribing|edit|review|practice|done
   const [melody, setMelody] = useState(null);
   const [error, setError] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -244,7 +412,6 @@ export default function SheetCoach() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playheadIdx, setPlayheadIdx] = useState(-1);
 
-  // Practice
   const [noteIdx, setNoteIdx] = useState(0);
   const [results, setResults] = useState([]);
   const [listening, setListening] = useState(false);
@@ -267,8 +434,6 @@ export default function SheetCoach() {
   const notesRef = useRef([]);
   const HOLD_REQUIRED = 24;
 
-  // ---- Upload -----------------------------------------------------------------
-  // Resize image to max 1600px on longest side before sending to API
   async function resizeImage(file, maxSize = 1600) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -279,8 +444,7 @@ export default function SheetCoach() {
         const w = Math.round(img.width * scale);
         const h = Math.round(img.height * scale);
         const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
+        canvas.width = w; canvas.height = h;
         canvas.getContext("2d").drawImage(img, 0, 0, w, h);
         resolve(canvas.toDataURL("image/jpeg", 0.85).split(",")[1]);
       };
@@ -297,19 +461,23 @@ export default function SheetCoach() {
     setStage("transcribing");
     setError(null);
     try {
-      // Resize to max 1600px to keep within API limits
       const base64 = await resizeImage(file, 1600);
       const result = await transcribeSheetMusic(base64, "image/jpeg");
       setMelody(result);
-      notesRef.current = result.notes;
-      setStage("review");
+      setStage("edit"); // Go to editor first
     } catch (err) {
       setError(err.message || "Transcription failed. Please try again.");
       setStage("upload");
     }
   }
 
-  // ---- Playback ---------------------------------------------------------------
+  function handleEditDone(correctedNotes) {
+    const updated = { ...melody, notes: correctedNotes };
+    setMelody(updated);
+    notesRef.current = correctedNotes;
+    setStage("review");
+  }
+
   function startPlayback() {
     if (isPlaying) return;
     setIsPlaying(true);
@@ -319,36 +487,25 @@ export default function SheetCoach() {
     const beatDur = 60 / tempo;
     let time = ctx.currentTime + 0.1;
     let totalDur = 0;
-
     melody.notes.forEach((n, i) => {
       const durSec = n.dur * beatDur;
       const noteStart = time;
-      // Animate playhead
       setTimeout(() => setPlayheadIdx(i), (noteStart - ctx.currentTime) * 1000);
-      // Only play audio for actual notes
       if (n.note !== "R") {
-        const concertMidi = writtenToConcert(n.note);
-        if (concertMidi != null) playNote(ctx, concertMidi, durSec * 0.9, time);
+        const cm = writtenToConcert(n.note);
+        if (cm != null) playNote(ctx, cm, durSec * 0.9, time);
       }
       time += durSec;
       totalDur += durSec;
     });
-
-    setTimeout(() => {
-      setIsPlaying(false);
-      setPlayheadIdx(-1);
-      if (playbackCtxRef.current) playbackCtxRef.current.close();
-    }, (totalDur + 0.5) * 1000);
+    setTimeout(() => { setIsPlaying(false); setPlayheadIdx(-1); if (playbackCtxRef.current) playbackCtxRef.current.close(); }, (totalDur + 0.5) * 1000);
   }
 
   function stopPlayback() {
     if (playbackCtxRef.current) playbackCtxRef.current.close();
-    setIsPlaying(false);
-    setPlayheadIdx(-1);
+    setIsPlaying(false); setPlayheadIdx(-1);
   }
 
-  // ---- Practice ---------------------------------------------------------------
-  // Find next non-rest note index from a given position
   function nextPlayableIdx(from, notes) {
     let i = from;
     while (i < notes.length && notes[i].note === "R") i++;
@@ -361,7 +518,6 @@ export default function SheetCoach() {
       if (isDone.current) return;
       analyser.getFloatTimeDomainData(buf);
       const freq = autoCorrelate(buf, sampleRate);
-
       if (freq > 40 && freq < 1400) {
         silFrames.current = 0;
         const detMidi = freqToMidi(freq);
@@ -369,50 +525,29 @@ export default function SheetCoach() {
         if (!note) { rafRef.current = requestAnimationFrame(tick); return; }
         const targetMidi = writtenToConcert(note.note);
         const inTune = targetMidi != null && Math.abs(detMidi - targetMidi) <= 1;
-
         const writtenMidi = detMidi + 14;
         const name = NOTE_NAMES[(writtenMidi % 12 + 12) % 12];
         const oct = Math.floor(writtenMidi / 12) - 1;
         setDetectedNote(name + oct);
-
-        const centsVal = targetMidi != null
-          ? Math.round((12 * Math.log2(freq / midiToFreq(targetMidi))) * 100)
-          : 0;
+        const centsVal = targetMidi != null ? Math.round((12 * Math.log2(freq / midiToFreq(targetMidi))) * 100) : 0;
         setCentsOff(centsVal);
-
         if (inTune) {
           holdFrames.current++;
           const pct = Math.min(Math.round((holdFrames.current / HOLD_REQUIRED) * 100), 100);
           setHoldPct(pct);
           setHoldStatus(pct < 100 ? "holding" : "locked");
-
           if (holdFrames.current >= HOLD_REQUIRED) {
             noteResults.current = [...noteResults.current, "correct"];
             setResults([...noteResults.current]);
-            holdFrames.current = 0;
-            setHoldPct(0);
-            // Advance past rests to next playable note
+            holdFrames.current = 0; setHoldPct(0);
             const next = nextPlayableIdx(currentIdx.current + 1, notesRef.current);
-            if (next >= notesRef.current.length) {
-              isDone.current = true;
-              setPracticeDone(true);
-              stopPractice();
-            } else {
-              currentIdx.current = next;
-              setNoteIdx(next);
-              setHoldStatus(null);
-            }
+            if (next >= notesRef.current.length) { isDone.current = true; setPracticeDone(true); stopPractice(); }
+            else { currentIdx.current = next; setNoteIdx(next); setHoldStatus(null); }
           }
-        } else {
-          holdFrames.current = 0;
-          setHoldPct(0);
-          setHoldStatus(null);
-        }
+        } else { holdFrames.current = 0; setHoldPct(0); setHoldStatus(null); }
       } else {
         silFrames.current++;
-        holdFrames.current = 0;
-        setHoldPct(0);
-        setHoldStatus(null);
+        holdFrames.current = 0; setHoldPct(0); setHoldStatus(null);
         if (silFrames.current > 20) { setDetectedNote(null); setCentsOff(0); }
       }
       rafRef.current = requestAnimationFrame(tick);
@@ -428,9 +563,7 @@ export default function SheetCoach() {
       analyser.fftSize = 2048;
       const src = ctx.createMediaStreamSource(stream);
       src.connect(analyser);
-      audioCtxRef.current = ctx;
-      analyserRef.current = analyser;
-      sourceRef.current = src;
+      audioCtxRef.current = ctx; analyserRef.current = analyser; sourceRef.current = src;
       isDone.current = false;
       startLoop(analyser, ctx.sampleRate);
       setListening(true);
@@ -447,19 +580,11 @@ export default function SheetCoach() {
 
   function resetPractice() {
     stopPractice();
-    // Start at first playable note (skip leading rests)
     const firstPlayable = melody ? nextPlayableIdx(0, melody.notes) : 0;
-    setNoteIdx(firstPlayable);
-    setResults([]);
-    setPracticeDone(false);
-    setDetectedNote(null);
-    setHoldPct(0);
-    setHoldStatus(null);
-    noteResults.current = [];
-    currentIdx.current = firstPlayable;
-    isDone.current = false;
-    holdFrames.current = 0;
-    silFrames.current = 0;
+    setNoteIdx(firstPlayable); setResults([]); setPracticeDone(false);
+    setDetectedNote(null); setHoldPct(0); setHoldStatus(null);
+    noteResults.current = []; currentIdx.current = firstPlayable;
+    isDone.current = false; holdFrames.current = 0; silFrames.current = 0;
   }
 
   useEffect(() => () => { stopPractice(); stopPlayback(); }, []);
@@ -473,23 +598,15 @@ export default function SheetCoach() {
   return (
     <div style={{ maxWidth:540, margin:"0 auto" }}>
       <h2 style={{ fontSize:18, fontWeight:700, marginBottom:4 }}>Sheet Coach</h2>
-      <p style={{ fontSize:12, color:"#6b7280", marginBottom:16 }}>
-        Upload your sheet music — AI reads it, plays it back, then coaches you through it
-      </p>
+      <p style={{ fontSize:12, color:"#6b7280", marginBottom:16 }}>Upload sheet music — AI reads it, you correct it, then practise</p>
 
       {/* UPLOAD */}
       {stage === "upload" && (
         <div style={{ ...card, textAlign:"center" }}>
           <div style={{ fontSize:48, marginBottom:12 }}>📷</div>
           <div style={{ fontSize:15, fontWeight:700, marginBottom:8 }}>Upload Sheet Music</div>
-          <div style={{ fontSize:12, color:"#6b7280", marginBottom:20 }}>
-            Flat on a surface, good lighting, full page visible. Printed music works best.
-          </div>
-          {error && (
-            <div style={{ background:"#fef2f2", color:"#dc2626", borderRadius:8, padding:"10px 14px", fontSize:13, marginBottom:16 }}>
-              {error}
-            </div>
-          )}
+          <div style={{ fontSize:12, color:"#6b7280", marginBottom:8 }}>AI will read the notes — you can then correct any mistakes before practising</div>
+          {error && <div style={{ background:"#fef2f2", color:"#dc2626", borderRadius:8, padding:"10px 14px", fontSize:13, marginBottom:16 }}>{error}</div>}
           <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
             <label style={{ display:"inline-block", padding:"12px 22px", borderRadius:10, background:"#2563eb", color:"white", fontWeight:700, fontSize:14, cursor:"pointer" }}>
               From Gallery
@@ -500,7 +617,7 @@ export default function SheetCoach() {
               <input type="file" accept="image/*" capture="environment" onChange={handleUpload} style={{ display:"none" }} />
             </label>
           </div>
-          <div style={{ fontSize:11, color:"#9ca3af", marginTop:12 }}>JPG, PNG or HEIC</div>
+          <div style={{ fontSize:11, color:"#9ca3af", marginTop:12 }}>Best results: flat surface, good lighting, full page visible</div>
         </div>
       )}
 
@@ -510,8 +627,25 @@ export default function SheetCoach() {
           {imagePreview && <img src={imagePreview} alt="Sheet music" style={{ width:"100%", borderRadius:8, marginBottom:16, maxHeight:280, objectFit:"contain" }} />}
           <div style={{ fontSize:28, marginBottom:8 }}>🎵</div>
           <div style={{ fontSize:15, fontWeight:700, marginBottom:4 }}>Reading your music...</div>
-          <div style={{ fontSize:12, color:"#6b7280" }}>AI is transcribing every note and rest — about 15 seconds</div>
+          <div style={{ fontSize:12, color:"#6b7280" }}>About 15–20 seconds</div>
         </div>
+      )}
+
+      {/* EDIT */}
+      {stage === "edit" && melody && (
+        <>
+          <div style={{ ...card, padding:"12px 16px" }}>
+            <div style={{ fontSize:15, fontWeight:700 }}>{melody.title}</div>
+            <div style={{ fontSize:12, color:"#6b7280" }}>{notes.filter(n=>n.note!=="R").length} notes · {notes.filter(n=>n.note==="R").length} rests · Check and correct before practising</div>
+          </div>
+          {imagePreview && (
+            <div style={{ ...card, padding:12 }}>
+              <img src={imagePreview} alt="Your sheet music" style={{ width:"100%", borderRadius:8, maxHeight:220, objectFit:"contain" }} />
+              <div style={{ fontSize:11, color:"#9ca3af", marginTop:6, textAlign:"center" }}>Your original sheet — use this to check the notes</div>
+            </div>
+          )}
+          <NoteEditor notes={notes} onDone={handleEditDone} />
+        </>
       )}
 
       {/* REVIEW */}
@@ -521,38 +655,27 @@ export default function SheetCoach() {
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
               <div>
                 <div style={{ fontSize:16, fontWeight:700 }}>{melody.title}</div>
-                <div style={{ fontSize:12, color:"#6b7280" }}>
-                  {notes.filter(n => n.note !== "R").length} notes · {notes.filter(n => n.note === "R").length} rests
-                </div>
+                <div style={{ fontSize:12, color:"#6b7280" }}>{notes.filter(n=>n.note!=="R").length} notes · {notes.filter(n=>n.note==="R").length} rests</div>
               </div>
-              <button onClick={() => { setStage("upload"); setMelody(null); }}
-                style={{ fontSize:12, color:"#6b7280", background:"none", border:"1px solid #e5e7eb", borderRadius:8, padding:"6px 10px", cursor:"pointer" }}>
-                Re-upload
-              </button>
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={() => setStage("edit")} style={{ fontSize:12, color:"#6b7280", background:"none", border:"1px solid #e5e7eb", borderRadius:8, padding:"6px 10px", cursor:"pointer" }}>Edit notes</button>
+                <button onClick={() => { setStage("upload"); setMelody(null); }} style={{ fontSize:12, color:"#6b7280", background:"none", border:"1px solid #e5e7eb", borderRadius:8, padding:"6px 10px", cursor:"pointer" }}>Re-upload</button>
+              </div>
             </div>
-            {imagePreview && <img src={imagePreview} alt="Sheet" style={{ width:"100%", borderRadius:8, marginBottom:12, maxHeight:200, objectFit:"contain" }} />}
             <MiniStaff notes={notes} currentIdx={playheadIdx} results={[]} />
           </div>
-
           <div style={card}>
-            <div style={{ fontSize:13, fontWeight:600, marginBottom:12 }}>Listen first — hear it before you play</div>
+            <div style={{ fontSize:13, fontWeight:600, marginBottom:12 }}>Listen first</div>
             <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
               <label style={{ fontSize:12, color:"#6b7280", minWidth:50 }}>Tempo:</label>
               <input type="range" min={30} max={160} value={tempo} onChange={e => setTempo(Number(e.target.value))} style={{ flex:1 }} />
               <span style={{ fontSize:13, fontWeight:700, minWidth:50 }}>{tempo} BPM</span>
             </div>
             <div style={{ display:"flex", gap:10 }}>
-              <button onClick={isPlaying ? stopPlayback : startPlayback} style={{
-                flex:1, padding:"12px 0", borderRadius:10, border:"none",
-                background: isPlaying ? "#dc2626" : "#7c3aed",
-                color:"white", fontWeight:700, fontSize:14, cursor:"pointer",
-              }}>
+              <button onClick={isPlaying ? stopPlayback : startPlayback} style={{ flex:1, padding:"12px 0", borderRadius:10, border:"none", background: isPlaying ? "#dc2626" : "#7c3aed", color:"white", fontWeight:700, fontSize:14, cursor:"pointer" }}>
                 {isPlaying ? "Stop" : "Play it back"}
               </button>
-              <button onClick={() => { resetPractice(); setStage("practice"); }} style={{
-                flex:1, padding:"12px 0", borderRadius:10, border:"none",
-                background:"#16a34a", color:"white", fontWeight:700, fontSize:14, cursor:"pointer",
-              }}>
+              <button onClick={() => { resetPractice(); setStage("practice"); }} style={{ flex:1, padding:"12px 0", borderRadius:10, border:"none", background:"#16a34a", color:"white", fontWeight:700, fontSize:14, cursor:"pointer" }}>
                 Practise it
               </button>
             </div>
@@ -566,25 +689,14 @@ export default function SheetCoach() {
           <div style={{ ...card, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div>
               <div style={{ fontSize:15, fontWeight:700 }}>{melody.title}</div>
-              <div style={{ fontSize:12, color:"#6b7280" }}>
-                Note {Math.min(noteIdx + 1, notes.length)} of {notes.length}
-              </div>
+              <div style={{ fontSize:12, color:"#6b7280" }}>Note {Math.min(noteIdx+1, notes.length)} of {notes.length}</div>
             </div>
             <div style={{ display:"flex", gap:8 }}>
-              <button onClick={() => { stopPractice(); setStage("review"); }}
-                style={{ fontSize:12, color:"#6b7280", background:"none", border:"1px solid #e5e7eb", borderRadius:8, padding:"6px 10px", cursor:"pointer" }}>
-                Listen again
-              </button>
-              <button onClick={resetPractice}
-                style={{ fontSize:12, color:"#6b7280", background:"none", border:"1px solid #e5e7eb", borderRadius:8, padding:"6px 10px", cursor:"pointer" }}>
-                Restart
-              </button>
+              <button onClick={() => { stopPractice(); setStage("review"); }} style={{ fontSize:12, color:"#6b7280", background:"none", border:"1px solid #e5e7eb", borderRadius:8, padding:"6px 10px", cursor:"pointer" }}>Listen again</button>
+              <button onClick={resetPractice} style={{ fontSize:12, color:"#6b7280", background:"none", border:"1px solid #e5e7eb", borderRadius:8, padding:"6px 10px", cursor:"pointer" }}>Restart</button>
             </div>
           </div>
-
-          <div style={card}>
-            <MiniStaff notes={notes} currentIdx={noteIdx} results={results} />
-          </div>
+          <div style={card}><MiniStaff notes={notes} currentIdx={noteIdx} results={results} /></div>
 
           {!practiceDone && target && (
             <div style={{ ...card, textAlign:"center" }}>
@@ -596,49 +708,32 @@ export default function SheetCoach() {
                     <div>
                       <div style={{ fontSize:11, color:"#9ca3af", marginBottom:2 }}>Play this</div>
                       <div style={{ fontSize:48, fontWeight:800, letterSpacing:-2, color:"#2563eb", lineHeight:1 }}>{target.note}</div>
-                      {targetConcert && (
-                        <div style={{ fontSize:11, color:"#9ca3af", marginTop:4 }}>
-                          concert: {NOTE_NAMES[(targetConcert % 12 + 12) % 12]}{Math.floor(targetConcert / 12) - 1}
-                        </div>
-                      )}
+                      {targetConcert && <div style={{ fontSize:11, color:"#9ca3af", marginTop:4 }}>concert: {NOTE_NAMES[(targetConcert%12+12)%12]}{Math.floor(targetConcert/12)-1}</div>}
                     </div>
                     <div style={{ fontSize:22, color:"#d1d5db" }}>→</div>
                     <div>
                       <div style={{ fontSize:11, color:"#9ca3af", marginBottom:2 }}>You're playing</div>
-                      <div style={{
-                        fontSize:48, fontWeight:800, letterSpacing:-2, lineHeight:1,
-                        color: inTune ? "#16a34a" : detectedNote ? "#f59e0b" : "#d1d5db",
-                      }}>
+                      <div style={{ fontSize:48, fontWeight:800, letterSpacing:-2, lineHeight:1, color: inTune ? "#16a34a" : detectedNote ? "#f59e0b" : "#d1d5db" }}>
                         {detectedNote || "—"}
                       </div>
-                      {detectedNote && (
-                        <div style={{ fontSize:11, marginTop:2, color: inTune ? "#16a34a" : "#9ca3af" }}>
-                          {inTune ? "in tune" : (centsOff > 0 ? "+" : "") + centsOff + "c"}
-                        </div>
-                      )}
+                      {detectedNote && <div style={{ fontSize:11, marginTop:2, color: inTune ? "#16a34a" : "#9ca3af" }}>{inTune ? "in tune" : (centsOff>0?"+":"")+centsOff+"c"}</div>}
                     </div>
                   </div>
                   <div style={{ height:8, borderRadius:4, background:"#f3f4f6", margin:"12px 0 0", overflow:"hidden" }}>
-                    <div style={{ height:"100%", borderRadius:4, width: holdPct + "%", background: holdStatus === "locked" ? "#16a34a" : "#2563eb", transition:"width 0.05s linear" }} />
+                    <div style={{ height:"100%", borderRadius:4, width:holdPct+"%", background: holdStatus==="locked"?"#16a34a":"#2563eb", transition:"width 0.05s linear" }} />
                   </div>
                   <div style={{ fontSize:11, color:"#9ca3af", marginTop:4 }}>
-                    {holdStatus === "locked" ? "Note confirmed!" : holdStatus === "holding" ? "Hold steady..." : listening ? "Start playing..." : "Press Start to begin"}
+                    {holdStatus==="locked"?"Note confirmed!":holdStatus==="holding"?"Hold steady...":listening?"Start playing...":"Press Start to begin"}
                   </div>
                 </>
               )}
             </div>
           )}
 
-          {practiceDone && (
-            <Summary results={results} notes={notes} onRetry={resetPractice} onBack={() => { stopPractice(); setStage("review"); }} />
-          )}
+          {practiceDone && <Summary results={results} notes={notes} onRetry={resetPractice} onBack={() => { stopPractice(); setStage("review"); }} />}
 
           {!practiceDone && (
-            <button onClick={listening ? stopPractice : startPractice} style={{
-              width:"100%", padding:"14px 0", borderRadius:12, border:"none",
-              background: listening ? "#dc2626" : "#2563eb",
-              color:"white", fontSize:16, fontWeight:700, cursor:"pointer", marginBottom:12,
-            }}>
+            <button onClick={listening ? stopPractice : startPractice} style={{ width:"100%", padding:"14px 0", borderRadius:12, border:"none", background: listening?"#dc2626":"#2563eb", color:"white", fontSize:16, fontWeight:700, cursor:"pointer", marginBottom:12 }}>
               {listening ? "Stop Listening" : "Start Listening"}
             </button>
           )}
